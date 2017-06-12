@@ -2,7 +2,7 @@
 OpenDice is a small and simple die rolling app written in C
 
 ## License
-The OpenDice Code is licensed under GPL v3.0
+OpenDice is licensed under GPL v3.0
 More information can be found in the LICENCE file or at the following link
 https://www.gnu.org/licenses/gpl-3.0.en.html
 

@@ -10,29 +10,29 @@ https://www.gnu.org/licenses/gpl-3.0.en.html
 The core of OpenDice is the expression system.
 Input is treated like a mathematical expression, reading the numbers, sumbols, and characters in a way that follows order of operations.
 
-Roll n number of x dice like so
+Roll n number of x dice like so    
 OpenDice ndx
 
-So to roll 2 six sided dice
-OpenDice 2d6
+So to roll 2 six sided dice    
+OpenDice 2d6    
 When rolling multiple dice like this each roll is added together and the user is given the total
 
-Use multiplication and addition to modify the result
-OpenDice 2d6+2
+Use multiplication and addition to modify the result    
+OpenDice 2d6+2    
 The above will roll two six sided dice, add the two rolls together, and then add two to that end result
 
-Order of operations is as follows
-rolls (xdy)
-multiplication (x\*y)
+Order of operations is as follows    
+rolls (xdy)    
+multiplication (x\*y)    
 addition (x+y)
 
-You can roll dice to tell OpenDice how many dice it should roll
-OpenDice 3d6d20
+You can roll dice to tell OpenDice how many dice it should roll    
+OpenDice 3d6d20    
 The above rolls 3d6, then rolls that many d20. This can be continued indefinitely.
 
 ### Tags
-Adding the -i tag to show individual rolls
-OpenDice 2d6 -i
+Adding the -i tag to show individual rolls    
+OpenDice 2d6 -i    
 The above will show the result of each d6
 
 ## Known Issues

@@ -9,7 +9,7 @@ https://www.gnu.org/licenses/gpl-3.0.en.html
 ## How to Use
 ### Rolling
 The core of OpenDice is the expression system.
-Input is treated like a mathematical expression, reading the numbers, sumbols, and characters in a way that follows order of operations.
+Input is treated like a mathematical expression, reading the numbers, symbols, and characters in a way that follows order of operations.
 
 Roll n number of x dice like so    
 OpenDice ndx
@@ -56,6 +56,7 @@ The above will show the result of each d6
 ## Planned Features
 * Fix the Known Issues
 * Add Paranthasis to allow for using a non-standard order of operations
+* Subtraction
 * Add -d tag to let the user delay the result (-d 1 delays the result for one second)
 * Add -h tag to let the user hide the result until they press a key
 * Add help option

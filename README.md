@@ -7,6 +7,7 @@ More information can be found in the LICENCE file or at the following link
 https://www.gnu.org/licenses/gpl-3.0.en.html
 
 ## How to Use
+### Rolling
 The core of OpenDice is the expression system.
 Input is treated like a mathematical expression, reading the numbers, sumbols, and characters in a way that follows order of operations.
 
@@ -27,12 +28,22 @@ exponentiation (xey)
 multiplication (x\*y)   
 addition (x+y)
 
-You can roll dice to tell OpenDice how many dice it should roll    
+Dice can be rolled to tell OpenDice how many dice it should roll    
 OpenDice 3d6d20    
 The above rolls 3d6, then rolls that many d20. This can be continued indefinitely.
 
+### Coin
+Use coin to flip a coin    
+OpenDice coin    
+The above will return with heads or tails
+
+Flip x coins like so    
+OpenDice coin x    
+The x in the above can be any expression, not just a number
+
+
 ### Tags
-Adding the -i tag to show individual rolls    
+Adding the -i tag to show individual rolls/coin flips    
 OpenDice 2d6 -i    
 The above will show the result of each d6
 
@@ -47,6 +58,6 @@ The above will show the result of each d6
 * Add Paranthasis to allow for using a non-standard order of operations
 * Add -d tag to let the user delay the result (-d 1 delays the result for one second)
 * Add -h tag to let the user hide the result until they press a key
-* Add coin flipping
+* Add help option
 * Add expression saving. An expression can be saved under a name using -s, then rolled under than name with the -r tag
 * Impliment a fully featured GUI

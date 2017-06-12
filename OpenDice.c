@@ -23,6 +23,22 @@ int roll(int num, int type, int *rolls, int indiv)
 	return total;
 }
 
+// takes in a number of coins, and returns the flips and tally
+void flip_coin(int num, int tally[], int flips[], int indiv)
+{
+	int i;
+	int flip;
+	printf(indiv && num > 1 ? "\n" : "");
+	for (i = 0; i < num; i++){
+		flips[i] = rand()%2;
+		tally[flips[i]]++;
+		if (indiv && num > 1){
+			printf(flips[i] ? "tails" : "heads");
+			printf(i == num-1 ? "\n" : "+");
+		}
+	}
+}
+
 // multiply a number by itself a number of times
 int exponentiate(int bse, int xpnt) // base and exponent
 {
@@ -117,19 +133,22 @@ int main(int argc, char *argv[])
 	char *command; // the roll the user enters
 	// tags
 	int indiv = 0; // display individial rolls
+	int hide = 0; // hide result until a key is pressed
+	int coin = 0; // flip coin
+	int rolling = 1; // rolling dice
 	srand(time(NULL));
+	int i;
 	if (argc == 2){
-		command = malloc(strlen(argv[1])); // allocate some memory for the command
-		strcpy(command, argv[1]);
 		// run code as normal
 	} else if (argc > 2) {
 		int i;
-		command = malloc(strlen(argv[1])); // allocate some memory for the command
-		strcpy(command, argv[1]);
-		// TODO fix below loop for detecting tags
+		// search commands for tags
 		for (i = 1; i < argc; i++){
-			if (strcmp(argv[i], "-i") == 0){
+			if (strcmp(argv[i], "-i") == 0){ // if there is an "individual" tag
 				indiv = 1;
+			}
+			if (strcmp(argv[i], "-h") == 0){ // if there is a "hide" tag
+				hide = 1;
 			}
 		}
 		// TODO combine arguments together
@@ -138,13 +157,28 @@ int main(int argc, char *argv[])
 		printf("Error: No Input\n");
 		return 1;
 	}
+	// check if flipping a coin
+	i = 1;
+	if (strcmp(argv[1], "coin") == 0){ // if flipping a coin
+		coin = 1;
+		if (argc > 2){
+			i++;
+		}
+	}
+	// allocate memory for command
+	if (coin == 0 || (argc - indiv - hide) > 2){ // if there isn't a coin or there are multiple arguments
+		command = malloc(strlen(argv[i]));
+		strcpy(command, argv[i]);
+	} else {
+		rolling = 0;
+	}
 	// Order of operations! Randy eats many apples
 	// roll, exponent, multiply, add
 	// in this case the order of operations are hardcoded
 	/*
 	 * roll
 	 */
-	while(1){
+	while(rolling){
 		// find the numbers on either side of the given character
 		start = find_bookend_numbers(nums, 'd', command);
 		num = nums[0];
@@ -166,7 +200,7 @@ int main(int argc, char *argv[])
 	/*
 	 * exponentiate
 	 */
-	while(1){
+	while(rolling){
 		start = find_bookend_numbers(nums, 'e', command);
 		num = nums[0];
 		type = nums[1];
@@ -182,7 +216,7 @@ int main(int argc, char *argv[])
 	/*
 	 * multiply
 	 */
-	while(1){
+	while(rolling){
 		start = find_bookend_numbers(nums, '*', command);
 		num = nums[0];
 		type = nums[1];
@@ -198,7 +232,7 @@ int main(int argc, char *argv[])
 	/*
 	 * add
 	 */
-	while(1){
+	while(rolling){
 		start = find_bookend_numbers(nums, '+', command);
 		num = nums[0];
 		type = nums[1];
@@ -211,7 +245,30 @@ int main(int argc, char *argv[])
 		sprintf(ans_str, "%d", ans);
 		str_replace(start, get_int_len(nums[0])+get_int_len(nums[1])+1, ans_str);
 	}
-	printf(command);
-	realloc(command, 0); // free the memory
+	// if it's rolling and it's not coin with no indiv tag, print the command
+	if (rolling){
+		num = atoi (command);
+		if (indiv && num > 1 || !coin){
+			printf(command);
+		}
+	} else {
+		num = 1;
+	}
+	// takes in number of coins, the coin flips, and the indiv tag
+	if (coin == 1){
+		nums[0] = 0;
+		nums[1] = 0;
+		int flips[num];
+		flip_coin(num, nums, flips, indiv);
+		if (num > 1){
+			printf("%d heads\n", nums[0]);
+			printf("%d tails\n", nums[1]);
+		} else {
+			printf(flips[i] ? "tails" : "heads");
+		}
+	}
+	if (rolling){
+		realloc(command, 0); // free the memory
+	}
 	return 0;
 }

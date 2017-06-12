@@ -245,6 +245,22 @@ int main(int argc, char *argv[])
 		sprintf(ans_str, "%d", ans);
 		str_replace(start, get_int_len(nums[0])+get_int_len(nums[1])+1, ans_str);
 	}
+	/*
+	 * subtraction
+	 */
+	while(rolling){
+		start = find_bookend_numbers(nums, '-', command);
+		num = nums[0];
+		type = nums[1];
+		if (nums[0] == -1){
+			break;
+		}
+		int rolls[num];
+		ans = num - type;
+		char ans_str[get_int_len(ans)];
+		sprintf(ans_str, "%d", ans);
+		str_replace(start, get_int_len(nums[0])+get_int_len(nums[1])+1, ans_str);
+	}
 	// if it's rolling and it's not coin with no indiv tag, print the command
 	if (rolling){
 		num = atoi (command);

@@ -5,15 +5,19 @@
 
 // takes in a number of dice, type of dice, and returns the total
 // as well as what each individual roll was
-int roll(int num, int type, int *rolls)
+int roll(int num, int type, int *rolls, int indiv)
 {
 	int total = 0;
 	int i;
-	printf("%dd%d\n", num, type); // display the roll
+	if(indiv){
+		printf("%dd%d\n", num, type); // display the roll
+	}
 	for (i = 0; i < num; i++){ // roll the given number of dice the given number of times
 		rolls[i] = rand()%(type-1) + 1; // roll the die
-		printf("%d", rolls[i]); // display the roll
-		printf(i == num-1 ? "\n" : "+"); // display the "+" between numbers, but "\n" at the end 
+		if (indiv){
+			printf("%d", rolls[i]); // display the roll
+			printf(i == num-1 ? "\n" : "+"); // display the "+" between numbers, but "\n" at the end
+		}	
 		total += rolls[i]; // add that roll to the running total for display later
 	}
 	return total;
@@ -109,9 +113,10 @@ int main(int argc, char *argv[])
 	int num; // number of dice
 	int type; // type of dice
 	int ans; // the result of some function
-	int indi; // display individual rolls
 	char *start; // where the specific piece of a function starts
 	char *command; // the roll the user enters
+	// tags
+	int indiv = 0; // display individial rolls
 	srand(time(NULL));
 	if (argc == 2){
 		command = malloc(strlen(argv[1])); // allocate some memory for the command
@@ -122,12 +127,11 @@ int main(int argc, char *argv[])
 		command = malloc(strlen(argv[1])); // allocate some memory for the command
 		strcpy(command, argv[1]);
 		// TODO fix below loop for detecting tags
-		for (i = 2; i < argc; i++){
-			if (strcmp(argv[i], "-i") != 0){
-				printf(argv[i]);
+		for (i = 1; i < argc; i++){
+			if (strcmp(argv[i], "-i") == 0){
+				indiv = 1;
 			}
 		}
-		printf("\n");
 		// TODO combine arguments together
 		//return 0;
 	} else {// cannot run without input
@@ -149,13 +153,15 @@ int main(int argc, char *argv[])
 			break;
 		}
 		int rolls[num];
-		ans = roll(num, type, rolls); // roll the dice
+		ans = roll(num, type, rolls, indiv); // roll the dice
 		char ans_str[get_int_len(ans)];
 		sprintf(ans_str, "%d", ans);
 		str_replace(start, get_int_len(nums[0])+get_int_len(nums[1]) + 1, ans_str);
 		// refortmat the answer so the command can be reused
-		printf("%d\n", ans);
-		printf("\n");
+		if (indiv){
+			printf("%d\n", ans);
+			printf("\n");
+		}
 	}
 	/*
 	 * multiply

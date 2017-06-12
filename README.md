@@ -48,6 +48,7 @@ OpenDice 2d6 -i
 The above will show the result of each d6
 
 ## Known Issues
+* running an expression of type [non-number][number] through find_bookend_numbers results in a crash
 * dx doesn't roll a single die of type x
 * There is no effort made to clean up the input before trying to read it
 * The randomness is not garanteed to be cryptographically secure

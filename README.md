@@ -1,12 +1,12 @@
-#OpenDice
+# OpenDice
 OpenDice is a small and simple die rolling app written in C
 
-##License
+## License
 The OpenDice Code is licensed under GPL v3.0
 More information can be found in the LICENCE file or at the following link
 https://www.gnu.org/licenses/gpl-3.0.en.html
 
-##How to Use
+## How to Use
 The core of OpenDice is the expression system.
 Input is treated like a mathematical expression, reading the numbers, sumbols, and characters in a way that follows order of operations.
 
@@ -30,18 +30,18 @@ You can roll dice to tell OpenDice how many dice it should roll
 OpenDice 3d6d20
 The above rolls 3d6, then rolls that many d20. This can be continued indefinitely.
 
-###Tags
+### Tags
 Adding the -i tag to show individual rolls
 OpenDice 2d6 -i
 The above will show the result of each d6
 
-##Known Issues
+## Known Issues
 * dx doesn't roll a single die of type x
 * There is no effort made to clean up the input before trying to read it
 * The randomness is not garanteed to be cryptographically secure
 * Some lines of code are indented more than three times
 
-##Planned Features
+## Planned Features
 * Fix the Known Issues
 * Add Paranthasis to allow for using a non-standard order of operations
 * Add -d tag to let the user delay the result (-d 1 delays the result for one second)

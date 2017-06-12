@@ -23,7 +23,8 @@ The above will roll two six sided dice, add the two rolls together, and then add
 
 Order of operations is as follows    
 rolls (xdy)    
-multiplication (x\*y)    
+exponentiation (xey)    
+multiplication (x\*y)   
 addition (x+y)
 
 You can roll dice to tell OpenDice how many dice it should roll    

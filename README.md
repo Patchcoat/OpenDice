@@ -49,7 +49,6 @@ OpenDice 2d6 -i
 The above will show the result of each d6
 
 ## Known Issues
-* running an expression of type [non-number][number] through find_bookend_numbers results in a crash
 * dx doesn't roll a single die of type x
 * There is no effort made to clean up the input before trying to read it
 * The randomness is not garanteed to be cryptographically secure
@@ -58,7 +57,6 @@ The above will show the result of each d6
 ## Planned Features
 * Fix the Known Issues
 * Add Paranthasis to allow for using a non-standard order of operations
-* Subtraction
 * Add -d tag to let the user delay the result (-d 1 delays the result for one second)
 * Add -h tag to let the user hide the result until they press a key
 * Add help option

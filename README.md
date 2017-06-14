@@ -27,6 +27,7 @@ rolls (xdy)
 exponentiation (xey)    
 multiplication (x\*y)   
 addition (x+y)
+subtraction (x-y)
 
 Dice can be rolled to tell OpenDice how many dice it should roll    
 OpenDice 3d6d20    

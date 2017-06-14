@@ -54,6 +54,10 @@ int exponentiate(int bse, int xpnt) // base and exponent
 int get_int_len (int val)
 {
 	int l = 1;
+	if (val < 0){
+		val *= -1;
+		l++;
+	}
 	while (val > 9){
 		l++;
 		val/=10;
@@ -69,12 +73,20 @@ char* find_bookend_numbers(int nums[], char symbol, char *str)
 	char *start = str; // the position to return from
 	int found = 0; //whether or not the symbol is found
 	int dgts = 0; // how many digits are foud
+	int negative = 1;
+	
+	// if the first symbol is what is being looked for
+	if (*q == '-'){
+		negative = -1;
+		nums[1] = -1;
+	}
 
 	while(*q){// while there are more characters to find
 		if (*q == symbol){ // if the symbol is found
 			found = 1; // mark the symbol as found
 			break; // exit the loop
-		} else if (!isdigit(*q)){ // if some other symbol is found
+		} else if ((*q != '-' && !isdigit(q[1])) || !isdigit(*q)){
+		       	// if some other symbol is found
 			p = q; // begin the search for the bookend numbers from this character
 			start = q; // mark that position as the posititon to return to
 			q++; // advance to the next character
@@ -86,23 +98,25 @@ char* find_bookend_numbers(int nums[], char symbol, char *str)
 		start++;
 	}
 	if (found == 0){ // The symbol isn't found...
-		nums[0] = -1; // ...so set the return values to -1
+		nums[1] = -1; // ...so set the return values to -1
 		return start; // and exit the function
 	}
 	while(*p && dgts < 2){ // while there are more characters but before there are two numbers
-		if (isdigit(*p)){ // upon finding a digit
-			long val = strtol(p, &p, 10); // read a number
+		if ((*p == '-' && isdigit(p[1])) || isdigit(*p)){ // upon finding a digit
+			int val = strtol(p, &p, 10); // read a number
 			nums[dgts] = val; // and store it in the array
 			dgts++;
 		} else { // otherwise advance to the next character
 			p++;
 		}
 	}
+	nums[0] *= negative;
 	return start;
 }
 
 // takes in a pointer to where to start, how many characters to replace, and what to replace it with
-void str_replace(char* start, int end, char* rep){
+void str_replace(char* start, int end, char* rep)
+{
 	char *buffer = start + end; // set the buffer to the end of the string
 	int i;
 	// go through and replace each character
@@ -183,7 +197,7 @@ int main(int argc, char *argv[])
 		start = find_bookend_numbers(nums, 'd', command);
 		num = nums[0];
 		type = nums[1];
-		if (nums[0] == -1){
+		if (nums[1] == -1){
 			break;
 		}
 		int rolls[num];
@@ -204,10 +218,9 @@ int main(int argc, char *argv[])
 		start = find_bookend_numbers(nums, 'e', command);
 		num = nums[0];
 		type = nums[1];
-		if (nums[0] == -1){
+		if (nums[1] == -1){
 			break;
 		}
-		int rolls[num];
 		ans = exponentiate(num, type);
 		char ans_str[get_int_len(ans)];
 		sprintf(ans_str, "%d", ans);
@@ -220,10 +233,9 @@ int main(int argc, char *argv[])
 		start = find_bookend_numbers(nums, '*', command);
 		num = nums[0];
 		type = nums[1];
-		if (nums[0] == -1){
+		if (nums[1] == -1){
 			break;
 		}
-		int rolls[num];
 		ans = num * type;
 		char ans_str[get_int_len(ans)];
 		sprintf(ans_str, "%d", ans);
@@ -236,10 +248,9 @@ int main(int argc, char *argv[])
 		start = find_bookend_numbers(nums, '+', command);
 		num = nums[0];
 		type = nums[1];
-		if (nums[0] == -1){
+		if (nums[1] == -1){
 			break;
 		}
-		int rolls[num];
 		ans = num + type;
 		char ans_str[get_int_len(ans)];
 		sprintf(ans_str, "%d", ans);
@@ -249,17 +260,19 @@ int main(int argc, char *argv[])
 	 * subtraction
 	 */
 	while(rolling){
+		printf("Subtraction\n");
 		start = find_bookend_numbers(nums, '-', command);
 		num = nums[0];
 		type = nums[1];
-		if (nums[0] == -1){
+		if (nums[1] == -1){
 			break;
 		}
-		int rolls[num];
-		ans = num - type;
+		ans = num + type;
 		char ans_str[get_int_len(ans)];
 		sprintf(ans_str, "%d", ans);
-		str_replace(start, get_int_len(nums[0])+get_int_len(nums[1])+1, ans_str);
+		str_replace(start, get_int_len(nums[0])+get_int_len(nums[1]), ans_str);
+		// Why no plus one you may ask? Because if I include it then it goes one too far.
+		// I honestly don't understand it any better than I just explained it
 	}
 	// if it's rolling and it's not coin with no indiv tag, print the command
 	if (rolling){

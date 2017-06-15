@@ -189,6 +189,10 @@ int main(int argc, char *argv[])
 	// Order of operations! Randy eats many apples
 	// roll, exponent, multiply, add
 	// in this case the order of operations are hardcoded
+	if (hide){
+		printf("Press Enter or Return to roll");
+		getchar();
+	}
 	/*
 	 * roll
 	 */
@@ -260,7 +264,6 @@ int main(int argc, char *argv[])
 	 * subtraction
 	 */
 	while(rolling){
-		printf("Subtraction\n");
 		start = find_bookend_numbers(nums, '-', command);
 		num = nums[0];
 		type = nums[1];

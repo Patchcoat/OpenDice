@@ -186,11 +186,18 @@ int main(int argc, char *argv[])
 	} else {
 		rolling = 0;
 	}
-	// Order of operations! Randy eats many apples
-	// roll, exponent, multiply, add
+	/*
+	 * hide
+	 */
+	if (hide){
+		printf("Press any key to execute expression\n");
+		getch(); // WARNING: getch() may not be portable!
+	}
+	// Order of operations! Randy eats many avacoado soups
+	// roll, exponent, multiply, add, subtract
 	// in this case the order of operations are hardcoded
 	/*
-	 * rol
+	 * roll
 	 */
 	while(rolling){
 		// find the numbers on either side of the given character

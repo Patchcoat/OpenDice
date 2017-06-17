@@ -133,7 +133,7 @@ void str_replace(char* start, int end, char* rep)
 		*start = *buffer;
 		start++;
 		buffer++;
-	}while(*buffer);
+	}while(*buffer == '\0');
 	*start = '\0';
 }
 
@@ -181,7 +181,7 @@ int main(int argc, char *argv[])
 	}
 	// allocate memory for command
 	if (coin == 0 || (argc - indiv - hide) > 2){ // if there isn't a coin or there are multiple arguments
-		command = malloc(strlen(argv[i]));
+		command = malloc(strlen(argv[i]) + 1);
 		strcpy(command, argv[i]);
 	} else {
 		rolling = 0;
@@ -189,12 +189,8 @@ int main(int argc, char *argv[])
 	// Order of operations! Randy eats many apples
 	// roll, exponent, multiply, add
 	// in this case the order of operations are hardcoded
-	if (hide){
-		printf("Press Enter or Return to roll");
-		getchar();
-	}
 	/*
-	 * roll
+	 * rol
 	 */
 	while(rolling){
 		// find the numbers on either side of the given character
@@ -300,7 +296,7 @@ int main(int argc, char *argv[])
 		}
 	}
 	if (rolling){
-		realloc(command, 0); // free the memory
+		free(command); // free the memory
 	}
 	return 0;
 }

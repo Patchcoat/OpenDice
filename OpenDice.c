@@ -43,12 +43,18 @@ void flip_coin(int num, int tally[], int flips[], int indiv)
 int exponentiate(int bse, int xpnt) // base and exponent
 {
 	int total = 1;
-	int i;
-	for (i = 0; i < xpnt; i++){
-		total *= bse;
+	
+	while (xpnt){
+		if (xpnt&1){
+			total *= bse;
+		}
+		xpnt >>=1;
+		bse *= bse;
 	}
+
 	return total;
 }
+// Should have read more math, I was using an less method before this
 
 // get the length of an integer
 int get_int_len (int val)
@@ -181,7 +187,7 @@ int main(int argc, char *argv[])
 	}
 	// allocate memory for command
 	if (coin == 0 || (argc - indiv - hide) > 2){ // if there isn't a coin or there are multiple arguments
-		command = malloc(strlen(argv[i]) + 1);
+		command = malloc(strlen(argv[i]) + 2);
 		strcpy(command, argv[i]);
 	} else {
 		rolling = 0;

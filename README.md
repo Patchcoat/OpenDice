@@ -48,6 +48,9 @@ Adding the -i tag to show individual rolls/coin flips
 OpenDice 2d6 -i    
 The above will show the result of each d6
 
+Adding the -h tag will "hide" the result, when in reality, as said by the actual program, it just waits for the user to push a key before it rolls the expression.
+For those who ask "why does this feature exist?", this is suposed to emulate rolling dice under a cup. Once the roll is made there's no taking it back. The only thing you can do is remove the cup. While not a perfect emulation because the roll is made after you press the "any key", it surves it's purpose, in that after you've made your roll, you can't change it but you still don't know what it is.
+
 ## Known Issues
 * dx doesn't roll a single die of type x
 * There is no effort made to clean up the input before trying to read it
@@ -58,7 +61,7 @@ The above will show the result of each d6
 * Fix the Known Issues
 * Add Paranthasis to allow for using a non-standard order of operations
 * Add -d tag to let the user delay the result (-d 1 delays the result for one second)
-* Add -h tag to let the user hide the result until they press a key
+* Add -c tag to let the user count certain rolls
 * Add help option
 * Add expression saving. An expression can be saved under a name using -s, then rolled under than name with the -r tag
 * Impliment a fully featured GUI

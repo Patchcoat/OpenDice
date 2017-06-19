@@ -188,6 +188,10 @@ int main(int argc, char *argv[])
 	}
 	/*
 	 * hide
+	 * You may wonder why the hide function is before the actal rolls instead of after it, where it
+	 * would be hiding the result from the user while actualy having a result to hide.
+	 * I tell myself that the result is hidden better this way, because it can't be drawn from the ram.
+	 * Really it's because I'm lazy
 	 */
 	if (hide){
 		printf("Press any key to execute expression\n");

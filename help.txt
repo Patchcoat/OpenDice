@@ -48,4 +48,4 @@ Usage : roll [EQUATION] [EQUATION] ... [OPTIONS] ...
 
 This program is free software. See LICENSE for more information.
 Copyright (C) 2017 TheGreatS
-Report bugs at github.com/TheGreatS/OpenDice
+Report bugs at github.com/Patchcoat/OpenDice

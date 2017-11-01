@@ -208,15 +208,6 @@ node* insert_before(node *head, int which, float data, char dat, node* nxt){
   }
 }
 
-void traverse(node* head,callback f){
-  node* cursor = head;
-  while(cursor != NULL)
-  {
-    f(cursor);
-    cursor = cursor->next;
-  }
-}
-
 node* remove_front(node* head){
   if(head == NULL)
     return NULL;
@@ -252,66 +243,6 @@ node* remove_back(node* head){
   free(cursor);
 
   return head;
-}
-
-node* remove_any(node* head,node* nd){
-  /* if the node is the first node */
-  if(nd == head)
-  {
-    head = remove_front(head);
-    return head;
-  }
-
-  /* if the node is the last node */
-  if(nd->next == NULL)
-  {
-    head = remove_back(head);
-    return head;
-  }
-
-  /* if the node is in the middle */
-  node* cursor = head;
-  while(cursor != NULL)
-  {
-    if((cursor->next = nd))
-      break;
-    cursor = cursor->next;
-  }
-
-  if(cursor != NULL)
-  {
-    node* tmp = cursor->next;
-    cursor->next = tmp->next;
-    tmp->next = NULL;
-    free(tmp);
-  }
-  return head;
-}
-
-void dispose(node *head){
-  node *cursor, *tmp;
-
-  if(head != NULL)
-    {
-      cursor = head->next;
-      head->next = NULL;
-      while(cursor != NULL)
-        {
-          tmp = cursor->next;
-          free(cursor);
-          cursor = tmp;
-        }
-    }
-}
-
-void display(node* n){
-  if(n != NULL){
-    if (n->which == 0){
-      printf("%f ", n->data);
-    } else {
-      printf("%c ", n->dat);
-    }
-  }
 }
 
 /***********************************************************

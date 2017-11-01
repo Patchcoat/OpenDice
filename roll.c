@@ -613,12 +613,18 @@ int main(int argc, char *argv[]){
       printf("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n");
       printf("This is free software: you are free to change and redistribute it.\n");
       printf("There is NO WARRANTY, to the extent permitted by law.\n");
-      // TODO get this information from an external file
-      return 1;
+      return 0;
     } else if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")){
-      printf("Print Help File\n");
-      // TODO print actual help file
-      return 1;
+      char line[100];
+      FILE *fptr;
+      if ((fptr = fopen("help.txt", "r")) == NULL){
+        printf("ERROR: help file missing");
+        exit(1);
+      }
+      while(fgets(line, 100, fptr))
+        printf("%s", line);
+      fclose(fptr);
+      return 0;
     }
     // Store potential die rolls
     int dice[argc];
@@ -814,5 +820,5 @@ int main(int argc, char *argv[]){
     float ans = solve("1d6", 0, 0, 0);
     printf("%f\n", ans);
   }
-  return 1;
+  return 0;
 }

@@ -701,6 +701,8 @@ int main(int argc, char *argv[]){
     int bestNum = 0;
     int ineq = 0;
     int mult = 1;
+    int heads = 0;
+    int tails = 0;
     float target = 0;
     for (int i = 1; i < argc; i++){
       // check for tags
@@ -782,16 +784,29 @@ int main(int argc, char *argv[]){
             dice[i+1] = 0;
             float coinNum = 0;
             bool isNum = isFloat(&argv[i+1][0], &coinNum);
-            if (argv == NULL || !isNum || coinNum == 1){
-              printf("flipping coin\n");
-            } else {
-              printf("flipping %d coins\n", (int)coinNum);
+            if (argv == NULL || !isNum){
+              coinNum = 1;
+            }
+            for (int i = 0; i < coinNum; i++){
+              long side = random_at_most(1);
+              if (side == 1){
+                heads++;
+                if (verbose == 1 && (coinNum > 1 || mult > 1))
+                  printf("heads");
+              } else {
+                tails++;
+                if (verbose == 1 && (coinNum > 1 || mult > 1))
+                  printf("tails");
+              }
+              if (i < coinNum-1 && verbose == 1){
+                printf("\n");
+              }
             }
           } else {
             ans = solve(argv[i], verbose, best, bestNum);
           }
           success = 0;
-          if (verbose == 1){
+          if (verbose == 1 && heads+tails == 0){
             printf("%f", ans);
           }
           if (ineq != 0){
@@ -831,7 +846,7 @@ int main(int argc, char *argv[]){
           } else if (ineq == 0 || verbose == 1) {
             total += ans;
           }// Inequality comparison end
-          if (verbose == 1){
+          if (verbose == 1 && (heads+tails > 1 || mult > 1)){
             printf("\n");
           }
         }
@@ -843,12 +858,25 @@ int main(int argc, char *argv[]){
         printf("%f\n", ans);
       }
     }// MULT LOOP END
+    // print the results
     if (mult > 1){
-      printf("total%s %f\n", (ineq != 0 ? " success:" : ":") , total);
-    } else if (ineq == 0 && verbose == 0) {
+      if (heads == 0 && tails == 0){
+        printf("total%s %f\n", (ineq != 0 ? " success:" : ":") , total);
+      } else {
+        printf("heads: %d\ntails: %d\n", heads, tails);
+      }
+    } else if (ineq == 0 && verbose == 0 && heads+tails == 0) {
       printf("%f\n", total);
     } else if (ineq != 0 && verbose == 0){
       printf("%s\n", (total > 0 ? "success" : "failure"));
+    } else if (heads > 0 || tails > 0){
+      if (heads + tails > 1){
+        printf("heads: %d\ntails: %d\n", heads, tails);
+      } else if (heads == 1){
+        printf("heads\n");
+      } else if (tails == 1){
+        printf("tails\n");
+      }
     }
   } else {
     // default to rolling 1d6

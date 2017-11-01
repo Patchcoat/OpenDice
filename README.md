@@ -32,7 +32,7 @@ NOTE: when using parentheses or exponentiation there must be single quotes aroun
 
 Dice can be rolled to tell OpenDice how many dice it should roll    
 roll 3d6d20    
-The above rolls 3d6, then rolls that many d20. This can be continued indefinitely.
+The above rolls 3d6, adds the results, then rolls that many d20. This can be continued indefinitely.
 
 ### Coin
 Use coin to flip a coin    
@@ -42,6 +42,8 @@ The above will return with heads or tails
 Flip x coins like so    
 roll coin x    
 The x in the above must be a number. It cannot be an equation.
+
+NOTE: Coins must be in the format "roll coin x". Flipping coins and rolling dice at the same time is not recmmended as all the information from the die rolls may not show up.
 
 
 ### Tags

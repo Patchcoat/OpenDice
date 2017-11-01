@@ -43,7 +43,7 @@ Flip x coins like so
 roll coin x    
 The x in the above must be a number. It cannot be an equation.
 
-NOTE: Coins must be in the format "roll coin x". Flipping coins and rolling dice at the same time is not recmmended as all the information from the die rolls may not show up.
+NOTE: Coins must be in the format "roll coin x". Flipping coins and rolling dice at the same time is not recmmended as all the information from the die rolls may not show up, even when using the verbose tag.
 
 
 ### Tags

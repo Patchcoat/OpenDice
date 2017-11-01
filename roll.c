@@ -602,6 +602,43 @@ float solve(char *eq, int verb, int best, int bestNum){
 }
 
 /***********************************************************
+ * Format floats into strings. Rounds and removes trailing
+ * zeros.
+ ***********************************************************/
+void morphNumericString (char *s, int n) {
+  char *p;
+  int count;
+  p = strchr (s,'.');
+  if (p != NULL) {
+    count = n;
+    while (count >= 0) {
+      count--;
+      if (*p == '\0')
+        break;
+      p++;
+    }
+    *p-- = '\0';
+    while (*p == '0')
+      *p-- = '\0';
+    if (*p == '.') {
+      *p = '\0';
+    }
+  }
+}
+
+void nDecimals (char *s, double d, int n) {
+  int sz; double d2;
+  d2 = (d >= 0) ? d : -d;
+  sz = (d >= 0) ? 0 : 1;
+  if (d2 < 1) sz++;
+  while (d2 >= 1){
+    d2 /= 10.0; sz++;
+  }
+  sz += 1 + n;
+  sprintf (s, "%*.*f", sz, n, d);
+}
+
+/***********************************************************
  * The main function. Reads arguments.
  ***********************************************************/
 int main(int argc, char *argv[]){
@@ -743,7 +780,10 @@ int main(int argc, char *argv[]){
           }
           success = 0;
           if (verbose == 1 && heads+tails == 0){
-            printf("%f", ans);
+            char str[50];
+            nDecimals(str, ans, 3);
+            morphNumericString(str, 3);
+            printf("%s", str);
           }
           if (ineq != 0){
             switch (ineq){
@@ -791,18 +831,27 @@ int main(int argc, char *argv[]){
       if (hasEq == 0){
         ans = solve("1d6", verbose, best, bestNum);
         total += ans;
-        printf("%f\n", ans);
+        char str[50];
+        nDecimals(str, ans, 3);
+        morphNumericString(str, 3);
+        printf("%s\n", str);
       }
     }// MULT LOOP END
     // print the results
     if (mult > 1){
       if (heads == 0 && tails == 0){
-        printf("total%s %f\n", (ineq != 0 ? " success:" : ":") , total);
+        char str[50];
+        nDecimals(str, total, 3);
+        morphNumericString(str, 3);
+        printf("total%s %s\n", (ineq != 0 ? " success:" : ":") , str);
       } else {
         printf("heads: %d\ntails: %d\n", heads, tails);
       }
     } else if (ineq == 0 && verbose == 0 && heads+tails == 0) {
-      printf("%f\n", total);
+      char str[50];
+      nDecimals(str, ans, 3);
+      morphNumericString(str, 3);
+      printf("%s\n", str);
     } else if (ineq != 0 && verbose == 0){
       printf("%s\n", (total > 0 ? "success" : "failure"));
     } else if (heads > 0 || tails > 0){
@@ -818,7 +867,10 @@ int main(int argc, char *argv[]){
     // default to rolling 1d6
     srandom(time(NULL));
     float ans = solve("1d6", 0, 0, 0);
-    printf("%f\n", ans);
+    char str[50];
+    nDecimals(str, ans, 3);
+    morphNumericString(str, 3);
+    printf("%s\n", str);
   }
   return 0;
 }

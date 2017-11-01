@@ -8,60 +8,61 @@ https://www.gnu.org/licenses/gpl-3.0.en.html
 
 ## How to Use
 ### Rolling
-The core of OpenDice is the expression system.
-Input is treated like a mathematical expression, reading the numbers, symbols, and characters in a way that follows order of operations.
+The core of OpenDice is the equation system.
+Input is treated like a mathematical equation, reading the numbers, symbols, and characters in a way that follows order of operations.
 
-Roll n number of x dice like so    
-OpenDice ndx
+Roll n number of x sided dice like so    
+roll ndx
 
 So to roll 2 six sided dice    
-OpenDice 2d6    
+roll 2d6    
 When rolling multiple dice like this each roll is added together and the user is given the total
 
 Use multiplication and addition to modify the result    
-OpenDice 2d6+2    
+roll 2d6+2    
 The above will roll two six sided dice, add the two rolls together, and then add two to that end result
 
 Order of operations is as follows    
+parentheses ((x+y)*(w-z))    
 rolls (xdy)    
-exponentiation (xey)    
-multiplication (x\*y)   
-addition (x+y)
-subtraction (x-y)
+exponentiation (x^y)    
+multiplication and division (x\*y) (x/y)   
+addition and subtraction (x+y) (x-y)    
+NOTE: when using parentheses or exponentiation there must be single quotes around the equation, for example 'x^(y+z)'
 
 Dice can be rolled to tell OpenDice how many dice it should roll    
-OpenDice 3d6d20    
+roll 3d6d20    
 The above rolls 3d6, then rolls that many d20. This can be continued indefinitely.
 
 ### Coin
 Use coin to flip a coin    
-OpenDice coin    
+roll coin    
 The above will return with heads or tails
 
 Flip x coins like so    
-OpenDice coin x    
-The x in the above can be any expression, not just a number
+roll coin x    
+The x in the above must be a number. It cannot be an equation.
 
 
 ### Tags
-Adding the -i tag to show individual rolls/coin flips    
-OpenDice 2d6 -i    
-The above will show the result of each d6
+The -v or --verbose tag shows individual rolls/coin flips    
+roll 2d6 -v    
+The above will show the result of each d6 like so    
+3+5    
+8
 
-Adding the -h tag will "hide" the result, when in reality, as said by the actual program, it just waits for the user to push a key before it rolls the expression.
-For those who ask "why does this feature exist?", this is suposed to emulate rolling dice under a cup. Once the roll is made there's no taking it back. The only thing you can do is remove the cup. While not a perfect emulation because the roll is made after you press the "any key", it surves it's purpose, in that after you've made your roll, you can't change it but you still don't know what it is.
+The -t or --target tag sets a target for an equation results and reports back whether or not that target was reached single quotes must be used if a >, < or = is present    
+roll 2d6 -t '>=4'    
+The above will execute the equation "2d6", then check if the result is greater than or equal to 4 with either "success" or "failure".    
+If no inequality is given (>, <, or =) then it defaults to checking if the result is equal to the given number
 
-## Known Issues
-* dx doesn't roll a single die of type x
-* There is no effort made to clean up the input before trying to read it
-* The randomness is not garanteed to be cryptographically secure
-* Some lines of code are indented more than three times
+The -b or --best tag will take a given number of **t**op or **b**ottom rolls and ignore the rest.    
+roll 3d6 -b t2    
+The above will execute the equation "3d6", but will only add the top two results together. To use a certain number of the bottom results, use the character b in place of the t.    
+If no number is given the default is to use the single bottom or top results.    
+If no t or b is given, the default is to find the top results.
 
-## Planned Features
-* Fix the Known Issues
-* Add Paranthasis to allow for using a non-standard order of operations
-* Add -d tag to let the user delay the result (-d 1 delays the result for one second)
-* Add -c tag to let the user count certain rolls
-* Add help option
-* Add expression saving. An expression can be saved under a name using -s, then rolled under than name with the -r tag
-* Impliment a fully featured GUI
+The -m or --multiple tag will execute all the provided equations a given number of times.    
+roll 2d6 -m 3    
+The above will execute the equation "2d6" three times, and give back the three results added together.    
+To see each individual results, add a -v or --verbose tag.

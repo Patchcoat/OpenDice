@@ -541,6 +541,11 @@ float solve(char *eq, int verb, int best, int bestNum){
           // sides
           head = append(head, 0, 6, '\0');
         }
+        oprtr = top(stack);
+        while(oprtr == 'd'){
+          head = append(head, 1, 0, pop(stack));
+          oprtr = top(stack);
+        }
         push(stack, op);
         break;
       case '^':
@@ -840,13 +845,14 @@ int main(int argc, char *argv[]){
     }// MULT LOOP END
     if (mult > 1){
       printf("total%s %f\n", (ineq != 0 ? " success:" : ":") , total);
-    } else if (ineq == 0) {
+    } else if (ineq == 0 && verbose == 0) {
       printf("%f\n", total);
-    } else if (ineq != 0){
+    } else if (ineq != 0 && verbose == 0){
       printf("%s\n", (total > 0 ? "success" : "failure"));
     }
   } else {
     // default to rolling 1d6
+    srandom(time(NULL));
     float ans = solve("1d6", 0, 0, 0);
     printf("%f\n", ans);
   }

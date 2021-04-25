@@ -47,5 +47,5 @@ Usage : roll [EQUATION] [EQUATION] ... [OPTIONS] ...
   When using ^ or () there must be single quotes around the equation.
 
 This program is free software. See LICENSE for more information.
-Copyright (C) 2017 TheGreatS
+Copyright (C) 2017 Patchcoat
 Report bugs at github.com/Patchcoat/OpenDice

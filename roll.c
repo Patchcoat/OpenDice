@@ -1,876 +1,594 @@
-#include <ctype.h>
-#include <stdio.h>
-#include <stdbool.h>
+#include <time.h>
 #include <stdlib.h>
 #include <string.h>
-#include <time.h>
+#include <argp.h>
+#include <math.h>
+
+#define ISNUM(index) arg[index] >= '0' && arg[index] <= '9'
+#define ISNUMEXTENDED(index) (arg[index] >= '0' && arg[index] <= '9') || \
+                             arg[index] == '.'
+#define ISINEQ(index) arg[index] == '=' || arg[index] == '<' || \
+                      arg[index] == '!' || arg[index] == '>'
+#define ISOPERATOR(index) arg[index] == '+' || arg[index] == '-' || \
+                          arg[index] == '*' || arg[index] == '/' || \
+                          arg[index] == 'd' || arg[index] == 'c' || \
+                          arg[index] == '(' || arg[index] == ')' || \
+                          arg[index] == '!' || arg[index] == '^'
+#define MAXEQUATIONNUMSIZE 256
+
+const char *argp_program_version = "OpenDice 0.2";
+static char doc[] = "Documentation";
+static char args_doc[] = "EQUATION";
 
 /***********************************************************
- * check if a given string is a float, and return if the
- * float is bad.
+ * argument handling
+ * TODO rounding
  ***********************************************************/
-bool isFloat(const char *s, float *dest) {
-  if (s == NULL) {
-    return false;
-  }
-  char *endptr;
-  *dest = (float) strtod(s, &endptr);
-  if (s == endptr) {
-    return false; // no conversion
-  }
-  // Look at trailing text
-  while (isspace((unsigned char ) *endptr))
-    endptr++;
-  return *endptr == '\0';
-}
-
-/***********************************************************
- * returns the target number and the inequalities
- ***********************************************************/
-int targetNum(char *str, float *targetNum){
-  int ineq = 0;
-  int i = 0;
-  // check for the inequalities
-  while (str[i] == '=' || str[i] == '>' || str[i] == '<'){
-    switch (str[i]){
-    case '>':
-      ineq += (ineq > 1 ? 0 : 4);
-      break;
-    case '<':
-      ineq += (ineq > 1 ? 0 : 2);
-      break;
-    case '=':
-      ineq += (ineq & 1 ? 0 : 1);
-      break;
-    default:
-      break;
-    }
-    i++;
-  }
-  // default to equals
-  if (ineq == 0){
-    ineq = 1;
-  }
-  char *num = &str[i];
-  if (isFloat(num, targetNum)){
-    // Good float
-  } else {
-    // Bad float
-    ineq = 0;
-  }
-  return ineq;
-  /* !  0 000
-   * =  1 001
-   * <  2 010
-   * <= 3 011
-   * >  4 100
-   * >= 5 101
-   */
-}
-
-/***********************************************************
- * The Float Stack
- ***********************************************************/
-
-struct Stack
-{
-    int top;
-    unsigned capacity;
-    char *array;
+static struct argp_option options[] = {
+    {"verbose",  'v', 0, 0, "Produce verbose output"},
+    {"best",     'b', "TYPENUM", OPTION_ARG_OPTIONAL, 
+        "Keep the best NUM rolls in an equation and set the rest to 0. A TYPE, h (highest) or l (lowest), and NUM of rolls to select can be specified, in that order. TYPE is h and NUM is 1 by default"},
+    {"target",   't', "[INEQUALITY]NUM", 0, 
+        "Compare the result against NUM using INEQUALITY. INEQUALITY is '=' by default"},
+    {"multiple", 'm', "NUM", 0, "Repeat the given equations NUM times"},
+    {"graph", 'g', "INEQUALITY", OPTION_ARG_OPTIONAL,
+        "Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
+    {0}
 };
 
-struct Stack *createStack(unsigned capacity){
-    struct Stack *stack = (struct Stack*) malloc(sizeof(struct Stack));
-    stack->capacity = capacity;
-    stack->top = -1;
-    stack->array = (char*) malloc(stack->capacity * sizeof(char));
-    return stack;
+struct arguments {
+    char *equation;
+    int verbose;
+
+    int best;
+    char best_type;
+    int best_num;
+
+    int target;
+    char target_inequality[4];
+    float target_num;
+
+    int multiple;
+    int multiple_num;
+
+    int graph;
+    char graph_inequality[4];
+};
+
+int str_to_ineq(char *arg, char *ineq) {
+    int i = 0;
+    while (ISINEQ(i)) {
+        ineq[i] = arg[i];
+        i++;
+        if (i > 4)
+            break;
+    }
+    ineq[i] = '\0';
+    return i;
 }
 
-char isFull(struct Stack *stack)
-{   return stack->top == stack->capacity - 1; }
-
-char isEmpty(struct Stack *stack)
-{   return stack->top == -1;  }
-
-char top(struct Stack *stack)
-{   return (isEmpty(stack) ? '\0' : stack->array[stack->top]);}
-
-void push(struct Stack *stack, char item){
-    if (isFull(stack))
-        return;
-    stack->array[++stack->top] = item;
+static error_t parse_opt(int key, char *arg, struct argp_state *state) {
+    struct arguments *arguments = state->input;
+    switch (key) {
+        case 'v': {
+            arguments->verbose = 1;
+        } break;
+        case 'b': {
+            arguments->best = 1;
+            if (arg == 0)
+                break;
+            int len = strlen(arg);
+            if (len == 1) {
+                if (arg[0] == 'b') {
+                    arguments->best_type = 'b';
+                } else if (arg[0] == 'l') {
+                    arguments->best_type = 'l';
+                } else if (ISNUM(0)) {
+                    arguments->best_num = atoi(arg);
+                }
+            } else if (len > 1) {
+                int type_len = 0;
+                if (arg[0] == 'b') {
+                    type_len = 1;
+                    arguments->best_type = 'b';
+                } else if (arg[0] == 'l') {
+                    type_len = 1;
+                    arguments->best_type = 'l';
+                }
+                if (ISNUM(type_len)) {
+                    arguments->best_num = atoi(arg+type_len);
+                }
+            }
+        } break;
+        case 't': {
+            arguments->target = 1;
+            int len = strlen(arg);
+            if (len == 1 && ISNUM(0)) {
+                arguments->target_num = atof(arg);
+            } else if (len > 1) {
+                int ineq_len = 0;
+                if (ISINEQ(0)) {
+                    ineq_len = str_to_ineq(arg, arguments->target_inequality);
+                }
+                if (ISNUM(ineq_len)) {
+                    arguments->target_num = atof(arg+ineq_len);
+                }
+            } else {
+                return EINVAL;
+            }
+        } break;
+        case 'm': {
+            arguments->multiple = 1;
+            arguments->multiple_num = atoi(arg);
+        } break;
+        case 'g': {
+            arguments->graph = 1;
+            if (ISINEQ(0)) {
+                str_to_ineq(arg, arguments->graph_inequality);
+            }
+        } break;
+        case ARGP_KEY_ARG: {
+            if (state->arg_num >= 1)
+                argp_usage(state);
+            arguments->equation = arg;
+        } break;
+        case ARGP_KEY_END: {
+            if (state->arg_num < 1)
+                argp_usage(state);
+        } break;
+        default: {
+        } return ARGP_ERR_UNKNOWN;
+    }
+    return 0;
 }
 
-char pop(struct Stack *stack){
-    if (isEmpty(stack))
-        return '\0';
-    return stack->array[stack->top--];
+static struct argp argp = {options, parse_opt, args_doc, doc};
+
+/***********************************************************
+ * Equation parsing
+ ***********************************************************/
+void equation_count(char *arg, int *operator_count, int *number_count) {
+    *operator_count = 0;
+    *number_count = 0;
+
+    int i = 0;
+    while (arg[i] != '\0') {
+        if (ISNUMEXTENDED(i)) {
+            *number_count += 1;
+            while (ISNUMEXTENDED(i))
+                i++;
+        } else if (ISOPERATOR(i)) {
+            *operator_count += 1;
+            i++;
+        } else {
+            i++;
+        }
+    }
+}
+
+int precedence(char *op) {
+    switch(*op) {
+    case '+':
+        return 0;
+    case '-':
+        return 0;
+    case '*':
+        return 1;
+    case '/':
+        return 1;
+    case 'd':
+        return 3;
+    case 'c':
+        return 3;
+    case '^':
+        return 2;
+    case '!':
+        return 2;
+    case 'n': // negation
+        return 4;
+    case 'p': // unary operator that leaves it's operand unchanged
+        return 4;
+    default:
+        return 0;
+    }
+}
+
+typedef struct {
+    char *operators;
+    double *numbers;
+    int op_count;
+    int num_count;
+} Equation;
+void display_equation(Equation *equation) {
+    int num_count = 0;
+    printf("Equation: ");
+    for (int i = 0; i < equation->op_count; i++) {
+        if (equation->operators[i] == '.') {
+            printf("%f ", equation->numbers[num_count++]);
+        } else {
+            printf("%c ", equation->operators[i]);
+        }
+    }
+    printf("\n");
+}
+Equation *parse_equation(struct arguments *arguments) {
+    Equation *equation = malloc(sizeof(Equation));
+    int operator_count;
+    int number_count;
+
+    equation_count(arguments->equation, &operator_count, &number_count);
+    if (arguments->verbose) {
+        printf("Operators: %d\nNumbers: %d\n", operator_count, number_count);
+    }
+    equation->operators = malloc(sizeof(char*) * (operator_count + number_count));
+    equation->numbers = malloc(sizeof(double*) * number_count);
+    equation->op_count = 0;
+    equation->num_count = 0;
+
+    // shunting-yard algorithm
+    int i = 0;
+    char *arg = arguments->equation;
+    char *op_stack = malloc(sizeof(char*) * operator_count);
+    int stack_top = -1;
+    while (arg[i] != '\0') {
+        if (ISNUMEXTENDED(i)) {
+            char num_str[MAXEQUATIONNUMSIZE];
+            int j = 0;
+            while (ISNUMEXTENDED(i))
+                num_str[j++] = arg[i++];
+            num_str[j] = '\0';
+            equation->numbers[equation->num_count++] = atof(num_str);
+            equation->operators[equation->op_count++] = '.';
+        } else if (ISOPERATOR(i)) {
+            if (arg[i] == '-' && (i == 0 || (ISOPERATOR(i-1)))) {
+                arg[i] = 'n';
+            } else if (arg[i] == '+' && (i == 0 || (ISOPERATOR(i-1)))) {
+                arg[i] = 'p';
+            }
+            if (stack_top < 0) {
+                op_stack[++stack_top] = arg[i++];
+            } else {
+                if (arg[i] == '(') {
+                    op_stack[++stack_top] = arg[i++];
+                } else if (arg[i] == ')') {
+                    while (stack_top >= 0 && op_stack[stack_top] != '(')
+                        equation->operators[equation->op_count++] = op_stack[stack_top--];
+                    if (op_stack[stack_top] == '(')
+                        stack_top--;
+                    i++;
+                } else {
+                    while (stack_top >= 0) {
+                        int stack_precedence = precedence(&op_stack[stack_top]);
+                        int arg_precedence = precedence(&arg[i]);
+                        if (((stack_precedence == arg_precedence && op_stack[stack_top] != '!' &&
+                              op_stack[stack_top] != '^' && op_stack[stack_top] != 'c') ||
+                              stack_precedence > arg_precedence) &&
+                            op_stack[stack_top] != '(') {
+                            equation->operators[equation->op_count++] = op_stack[stack_top--];
+                        } else {
+                            break;
+                        }
+                    }
+                    op_stack[++stack_top] = arg[i++];
+                }
+            }
+        } else {
+            i++;
+        }
+    }
+    while (stack_top >= 0)
+        equation->operators[equation->op_count++] = op_stack[stack_top--];
+    free(op_stack);
+
+    if (arguments->verbose) {
+        display_equation(equation);
+    }
+
+    return equation;
 }
 
 /***********************************************************
- * Linked List for storing RPN output
+ * roll some type and number of dice
  ***********************************************************/
-typedef struct node{
-  int which;
-  float data;
-  char dat;
-  struct node *next;
-} node;
-
-typedef void (*callback)(node* data);
-
-node* create(int which, float data, char dat, node* next){
-  node* new_node = (node*)malloc(sizeof(node));
-  if(new_node == NULL)
-  {
-    printf("Error creating a new node.\n");
-    exit(0);
-  }
-  new_node->which = which;
-  new_node->data = data;
-  new_node->dat = dat;
-  new_node->next = next;
-
-  return new_node;
-}
-
-node* prepend(node* head, int which, float data, char dat){
-  node* new_node = create(which,data,dat,head);
-  head = new_node;
-  return head;
-}
-
-node* append(node* head, int which, float data, char dat){
-  /* if no head then prepend */
-  if (head == NULL){
-    return prepend(head, which, data, dat);
-  }
-  /* go to the last node */
-  node* cursor = head;
-  while(cursor->next != NULL)
-    cursor = cursor->next;
-  /* create a new node */
-  node* new_node =  create(which,data,dat,NULL);
-  cursor->next = new_node;
-  return head;
-}
-
-node* insert_after(node *head, int which, float data, char dat, node* prev){
-  if(head == NULL || prev == NULL)
-    return NULL;
-  /* find the prev node, starting from the first node*/
-  node *cursor = head;
-  while(cursor != prev)
-    cursor = cursor->next;
-
-  if(cursor != NULL)
-  {
-    node* new_node = create(which,data,dat,cursor->next);
-    cursor->next = new_node;
-    return head;
-  }
-  else
-  {
-    return NULL;
-  }
-}
-
-node* insert_before(node *head, int which, float data, char dat, node* nxt){
-  if(nxt == NULL || head == NULL)
-    return NULL;
-
-  if(head == nxt)
-  {
-    head = prepend(head,which,data,dat);
-    return head;
-  }
-
-  /* find the prev node, starting from the first node*/
-  node *cursor = head;
-  while(cursor != NULL)
-  {
-    if(cursor->next == nxt)
-      break;
-    cursor = cursor->next;
-  }
-
-  if(cursor != NULL)
-  {
-    node* new_node = create(which,data,dat,cursor->next);
-    cursor->next = new_node;
-    return head;
-  }
-  else
-  {
-    return NULL;
-  }
-}
-
-node* remove_front(node* head){
-  if(head == NULL)
-    return NULL;
-  node *front = head;
-  head = head->next;
-  front->next = NULL;
-  /* is this the last node in the list */
-  if(front == head)
-    head = NULL;
-  free(front);
-  return head;
-}
-
-node* remove_back(node* head){
-  if(head == NULL)
-    return NULL;
-
-  node *cursor = head;
-  node *back = NULL;
-  while(cursor->next != NULL)
-  {
-    back = cursor;
-    cursor = cursor->next;
-  }
-
-  if(back != NULL)
-    back->next = NULL;
-
-  /* if this is the last node in the list*/
-  if(cursor == head)
-    head = NULL;
-
-  free(cursor);
-
-  return head;
-}
-
-/***********************************************************
- * this function gets a float from a string and returns both
- * the float and a pointer to where the float ends in the
- * string
- ***********************************************************/
-float getFloat(char *str, char **endPtr){
-  float num = 0;
-  float dec = 0;
-  int i = 0;
-  int neg = 1;
-  // if the first character is '-' the float is negative
-  if (str[0] == '-'){
-    neg = -1;
-    i++;
-  }
-  // go through everything that would come before a decimal
-  // place and fill "num" with it.
-  // this "pushing" everything in num when it encouters a
-  // new digit, which it places in the ones place.
-  while (i < strlen(str) && isdigit(str[i])){
-    num *= 10;
-    num += (str[i] - '0');
-    i++;
-  }
-  // this does what the above function does, only in reverse
-  // rather than pushing everything over by multiplying by
-  // 10 it pushes just the last digit to the end
-  if (str[i] == '.'){
-    i++;
-    float place = 0.1;
-    while (i < strlen(str) && isdigit(str[i])){
-      dec += (str[i] - '0') * place;
-      place *= 0.1;
-      i++;
+int partition(double *list, int lo, int hi) {
+    double pivot = list[hi];
+    int i = lo;
+    for (int j = lo; j <= hi; j++) {
+        if (list[j] < pivot) {
+            double hold = list[j];
+            list[j] = list[i];
+            list[i] = hold;
+            i++;
+        }
     }
-  }
-  // give the position of the character right after the float
-  *endPtr = &str[i];
-  // add everything before and after the decimal, then apply
-  // the correct sign
-  return (num+dec) * neg;
+    double hold = list[hi];
+    list[hi] = list[i];
+    list[i] = hold;
+    return i;
 }
-
-/***********************************************************
- * roll the given dice
- ***********************************************************/
-
-long random_at_most(long max) {
-  unsigned long
-    // max <= RAND_MAX < ULONG_MAX, so this is okay.
-    num_bins = (unsigned long) max + 1,
-    num_rand = (unsigned long) RAND_MAX + 1,
-    bin_size = num_rand / num_bins,
-    defect   = num_rand % num_bins;
-
-  long x;
-  do {
-    x = random();
-  }
-  // This is carefully written not to overflow
-  while (num_rand - defect <= (unsigned long)x);
-
-  // Truncated division is intentional
-  return x/bin_size;
+void quicksort(double *list, int lo, int hi) {
+    if (lo < hi) {
+        int p = partition(list, lo, hi);
+        quicksort(list, lo, p - 1);
+        quicksort(list, p + 1, hi);
+    }
 }
+double roll(double count, double die, int coin, struct arguments *arguments) {
+    double *rolls = malloc(sizeof(double*) * ceil(count));
+    double result = 0;
+    double count_int;
+    double die_int;
+    double count_frac = modf(count, &count_int);
+    modf(die, &die_int);
+    if (arguments->verbose) {
+        if (coin)
+            printf("\nFlipping %f coin%s\n", count, count == 1 ? "" : "s");
+        else
+            printf("\nRolling %f %d-sided di%se\n", count, (int) die_int,
+                   count == 1 ? "" : "c");
+    }
 
-void findBest(int best, int bestNum, float input, float *bestNums){
-  if (best == 1){
-    // if the highest is considered the best
-    float min = bestNums[0];
-    int minPos = 0;
-    for (int i = 0; i < bestNum; i++){
-      if (bestNums[i] < min){
-        min = bestNums[i];
-        minPos = i;
-      }
+    for (int i = 0; i < count_int; i++) {
+        rolls[i] = !coin + (rand() % (int) die_int);
+        if (arguments->verbose) {
+            if (coin)
+                printf("Flip %d: %s\n", i+1, rolls[i] ? "heads" : "tails");
+            else
+                printf("Roll %d: %f\n", i+1, rolls[i]);
+        }
     }
-    if (min < input){
-      bestNums[minPos] = input;
+    if (count_frac > 0) {
+        rolls[(int) count] = (!coin + rand() % (int) die_int) * count_frac;
     }
-  } else if (best == -1){
-    // if the lowest is considered the best
-    float max = bestNums[0];
-    int maxPos = 0;
-    for (int i = 0; i < bestNum; i++){
-      if (bestNums[i] > max){
-        max = bestNums[i];
-        maxPos = i;
-      }
-    }
-    if (max > input){
-      bestNums[maxPos] = input;
-    }
-  }
-}
 
-float roll(float num, float sides, int verb, int best, int bestNum){
-  float total = 0;
-  long roll = 0;
-  best = (bestNum <= num ? best : 0);
-  float bestNums[(int)bestNum];
-  // loop through the number of dice
-  for(int i = 0; i < num; i++){
-    while (roll == 0){
-      roll = random_at_most(sides);
+    int start = 0;
+    int end = ceil(count)-1;
+    if (arguments->best) {
+        if (arguments->verbose)
+            printf("Sorting %ss\n", coin ? "flip" : "roll");
+        quicksort(rolls, start, end);
+        if (arguments->verbose)
+            printf("Selecting the %d %s %ss\n", arguments->best_num, 
+                    arguments->best_type == 'h' ? "highest" : "lowest",
+                    coin ? "flip" : "roll");
+        switch(arguments->best_type) {
+        case 'h': {
+            start = end - (arguments->best_num - 1);
+        } break;
+        case 'l': {
+            end = start + (arguments->best_num - 1);
+        } break;
+        default:
+            break;
+        }
     }
-    if (verb == 1 && num > 1){
-      printf("%ld", roll);
-      if (i < num-1){
-        printf("+");
-      }else{
+
+    if (arguments->verbose)
+        printf("total = ");
+    for (int i = start; i <= end; i++) {
+        if (arguments->verbose)
+            printf("%f%s", rolls[i], i == end ? "" : " + ");
+        result += rolls[i];
+    }
+    if (arguments->verbose)
         printf("\n");
-      }
-    }
-    // add roll to the array of the best
-    if (best != 0 && i < bestNum){
-      bestNums[i] = roll;
-    } else if (best != 0) {
-      findBest(best, bestNum, roll, bestNums);
-    }
-    total += roll;
-    roll = 0;
-  }
-  // find the best
-  if (best != 0){
-    total = 0;
-    for (int i = 0; i < bestNum; i++){
-      total += bestNums[i];
-    }
-  }
-  return total;
+
+    free(rolls);
+
+    return result;
 }
 
 /***********************************************************
- * compute exponents
+ * Evaluate equation
+ * return
+ * 0: success
+ * char: not enough numbers for the operator
  ***********************************************************/
-
-float expon(float bse, int pwr){
-  if (pwr == 0){
-    return 1;
-  } else if (pwr == 1){
-    return bse;
-  }
-  float tmp = expon(bse, pwr/2);
-  tmp = tmp*tmp;
-  if (pwr%2 == 0){
-    return tmp;
-  } else {
-    if (pwr > 0){
-      return bse*tmp;
-    } else {
-      return (tmp)/bse;
+int evaluate_equation(double *result_out, Equation *equation, struct arguments *arguments) {
+    double *num_stack = malloc(sizeof(double*) * (equation->num_count + 1));
+    int num_count = 0;
+    int stack_top = -1;
+    for (int i = 0; i < equation->op_count; i++) {
+        if (equation->operators[i] == '.') {
+            num_stack[++stack_top] = equation->numbers[num_count++];
+        } else {
+            double result = 0;
+            switch(equation->operators[i]) {
+            case '+': { // addition
+                if (stack_top < 1)
+                    return '+';
+                result = num_stack[stack_top - 1] + num_stack[stack_top];
+                num_stack[--stack_top] = result;
+            } break;
+            case '-': { // subtraction
+                if (stack_top < 1)
+                    return '-';
+                result = num_stack[stack_top - 1] - num_stack[stack_top];
+                num_stack[--stack_top] = result;
+            } break;
+            case '*': { // multiplication
+                if (stack_top < 1)
+                    return '*';
+                result = num_stack[stack_top - 1] * num_stack[stack_top];
+                num_stack[--stack_top] = result;
+            } break;
+            case '/': { // division
+                if (stack_top < 1)
+                    return '/';
+                result = num_stack[stack_top - 1] / num_stack[stack_top];
+                num_stack[--stack_top] = result;
+            } break;
+            case '^': { // exponentiation
+                if (stack_top < 1)
+                    return '^';
+                result = pow(num_stack[stack_top - 1], num_stack[stack_top]);
+                num_stack[--stack_top] = result;
+            } break;
+            case '!': { // factorial
+                if (stack_top < 0)
+                    return '!';
+                result = 1;
+                for (i = 1; i <= num_stack[stack_top]; i++)
+                    result = result * i;
+                num_stack[stack_top] = result;
+            } break;
+            case 'n': { // negation
+                if (stack_top < 0)
+                    return '-';
+                result = -num_stack[stack_top];
+                num_stack[stack_top] = result;
+            } break;
+            case 'p': { // change nothing
+                if (stack_top < 0)
+                    return '+';
+            } break;
+            case 'd': { // roll dice
+                if (stack_top < 1)
+                    return 'd';
+                result = roll(num_stack[stack_top - 1], num_stack[stack_top], 0, arguments);
+                num_stack[--stack_top] = result;
+            } break;
+            case 'c': {
+                if (stack_top < 0) {
+                    result = roll(1, 2, 1, arguments);
+                    stack_top++;
+                } else {
+                    result = roll(num_stack[stack_top], 2, 1, arguments);
+                }
+                num_stack[stack_top] = result;
+            } break;
+            default:
+                break;
+            }
+        }
     }
-  }
-  return 0;
+
+    *result_out = num_stack[0];
+
+    free(num_stack);
+    return 0;
 }
 
 /***********************************************************
- * Takes in the die roll function, seperates it, and
- * executes the pieces.
- * d dice
- * ^ exponents
- * * multiplication
- * / division
- * + addition
- * - subtraction
+ * TODO graph
  ***********************************************************/
-/*
-  For call-stack, for Shunting-yard
-  For Prim's, for multi-thread
-  For shortest path pathfinding
-  We thank thee, Dijkstra
-  Amen
- */
-// equation, verbose, best (h/l), target number, inequality
-float solve(char *eq, int verb, int best, int bestNum){
-  char op;// operator variable
-  float num;// number variable
-  char lstChar = 'x';// stores the previous character. x is placeholder, \0 is number
-  char *endPtr = eq;// for placeholding
-  struct Stack* stack = createStack(strlen(eq));// operator Stack
-  node *head = NULL;// the head of the linked list
-  // This extracts the numers and operators and fills the
-  // stack in reverse polish notation
-  while(eq[0] != '\0'){
-    if (lstChar != '\0'){
-      num = getFloat(eq, &endPtr);
-    }
-    //printf("%s", eq);
-    if (eq == endPtr && endPtr[0] != '\0'){
-      op = endPtr[0];
-      eq++;
-      char oprtr;
-      if (top(stack) == 'd' && op != '(' && lstChar != '\0' && lstChar != ')'){
-        // if the last operator was a die, and the number
-        // of sides wasn't chosen, then default to six sides
-        head = append(head, 0, 6, '\0');
-      }
-      switch(op){
-      case '(':
-        push(stack, op);
-        break;
-      case ')':
-        do{
-          oprtr = pop(stack);
-          if (oprtr != '(' && oprtr != '\0') {
-            head = append(head, 1, 0, oprtr);
-          }
-        } while (oprtr != '(' && oprtr != '\0');
-        // this handles (x)(y) = (x)*(y)
-        if (endPtr[1] != '\0' && endPtr[1] == '('){
-          endPtr[0] = '*';
-          eq--;
-        }
-        break;
-      case 'd':
-        if (lstChar != ')' && lstChar != '\0'){
-          // if the last get was an operator other than ')'
-          // then put a 1 into the output queue
-          head = append(head, 0, 1, '\0');
-        }
-        if (endPtr[1] == '\0'){
-          // if the d is the last character in the string, put
-          // a 6 in the output queue as the default number of
-          // sides
-          head = append(head, 0, 6, '\0');
-        }
-        oprtr = top(stack);
-        while(oprtr == 'd'){
-          head = append(head, 1, 0, pop(stack));
-          oprtr = top(stack);
-        }
-        push(stack, op);
-        break;
-      case '^':
-        oprtr = top(stack);
-        while(oprtr == 'd'){
-          head = append(head, 1, 0, pop(stack));
-          oprtr = top(stack);
-        }
-        push(stack, op);
-        break;
-      case '*':
-        oprtr = top(stack);
-        while (oprtr == 'd' || oprtr == '^' || oprtr == '*' || oprtr == '/'){
-          head = append(head, 1, 0, pop(stack));
-          oprtr = top(stack);
-        }
-        push(stack, op);
-        break;
-      case '/':
-        oprtr = top(stack);
-        while (oprtr == 'd' || oprtr == '^' || oprtr == '*' || oprtr == '/'){
-          head = append(head, 1, 0, pop(stack));
-          oprtr = top(stack);
-        }
-        push(stack, op);
-        break;
-      case '+':
-        oprtr = top(stack);
-        while (oprtr == 'd' || oprtr == '^' || oprtr == '*' || oprtr == '/' || oprtr == '+' || oprtr == '-'){
-          head = append(head, 1, 0, pop(stack));
-          oprtr = top(stack);
-        }
-        push(stack, op);
-        break;
-      case '-':
-        oprtr = top(stack);
-        while (oprtr == 'd' || oprtr == '^' || oprtr == '*' || oprtr == '/' || oprtr == '+' || oprtr == '-'){
-          head = append(head, 1, 0, pop(stack));
-          oprtr = top(stack);
-        }
-        push(stack, op);
-        break;
-      default:
-        // do nothing
-        break;
-      }
-      lstChar = op;
-    } else {
-      //handles (x)y = x*y
-      char oprtr = top(stack);
-      if (lstChar == ')'){
-        while (oprtr == 'd' || oprtr == '^' || oprtr == '*' || oprtr == '/'){
-          head = append(head, 1, 0, pop(stack));
-          oprtr = top(stack);
-        }
-        push(stack, '*');
-      }
-      // push the number into the queue
-      head = append(head, 0, num, '\0');
-      // this handles x(y) = x*(y)
-      if (endPtr[0] != '\0' && endPtr[0] == '('){
-        endPtr--;
-        endPtr[0] = '*';
-      }
-      eq = endPtr;
-      lstChar = '\0';
-    }
-  }
-  // pop the remaining operators from the stack
-  // append the operators to the list
-  char oprtr;
-  do{
-    oprtr = pop(stack);
-    if (oprtr != '\0'){
-      head = append(head, 1, 0, oprtr);
-    } else {
-      break;
-    }
-  } while(oprtr != '\0');
-  // print out the list
-  // solve the equation
-  node *eqHead = NULL;// the head of the equation list
-  do{
-    if (head == NULL){
-      break;
-    }
-    if (head->which == 0){
-      eqHead = prepend(eqHead, 0, head->data, '\0');
-      head = remove_front(head);
-    } else {
-      // I know I'm using a linked list like a stack. I don't care!
-      float num2 = eqHead->data;
-      eqHead = remove_front(eqHead);
-      float num1 = eqHead->data;
-      eqHead = remove_front(eqHead);
-      float ans = 0;
-      switch(head->dat){
-      case 'd':
-        ans = roll(num1, num2, verb, best, bestNum);
-        break;
-      case '^':
-        ans = expon(num1, (int) num2);
-        break;
-      case '*':
-        ans = num1 * num2;
-        break;
-      case '/':
-        ans = num1 / num2;
-        break;
-      case '+':
-        ans = num1 + num2;
-        break;
-      case '-':
-        ans = num1 - num2;
-        break;
-      default:
-        break;
-      }
-      eqHead = prepend(eqHead, 0, ans, '\0');
-      head = remove_front(head);
-    }
-  } while (head != NULL);
-  return eqHead->data;
+void graph(struct arguments arguments) {
 }
 
 /***********************************************************
- * Format floats into strings. Rounds and removes trailing
- * zeros.
+ * Target Inequality
  ***********************************************************/
-void morphNumericString (char *s, int n) {
-  char *p;
-  int count;
-  p = strchr (s,'.');
-  if (p != NULL) {
-    count = n;
-    while (count >= 0) {
-      count--;
-      if (*p == '\0')
-        break;
-      p++;
+int target_inequality(double result, struct arguments *arguments) {
+    if (arguments->target_inequality[0] == '=') { // ==
+        return result == arguments->target_num;
+    } else if (arguments->target_inequality[0] == '<' &&
+        arguments->target_inequality[1] == '=') { // <=
+        return result <= arguments->target_num;
+    } else if (arguments->target_inequality[0] == '>' &&
+        arguments->target_inequality[1] == '=') { // >=
+        return result >= arguments->target_num;
+    } else if (arguments->target_inequality[0] == '!' &&
+        arguments->target_inequality[1] == '=') { // !=
+        return result != arguments->target_num;
+    } else if (arguments->target_inequality[0] == '<') { // <
+        return result < arguments->target_num;
+    } else if (arguments->target_inequality[0] == '>') { // >
+        return result > arguments->target_num;
     }
-    *p-- = '\0';
-    while (*p == '0')
-      *p-- = '\0';
-    if (*p == '.') {
-      *p = '\0';
-    }
-  }
-}
-
-void nDecimals (char *s, double d, int n) {
-  int sz; double d2;
-  d2 = (d >= 0) ? d : -d;
-  sz = (d >= 0) ? 0 : 1;
-  if (d2 < 1) sz++;
-  while (d2 >= 1){
-    d2 /= 10.0; sz++;
-  }
-  sz += 1 + n;
-  sprintf (s, "%*.*f", sz, n, d);
+    return result == arguments->target_num;
 }
 
 /***********************************************************
- * The main function. Reads arguments.
+ * The main function
  ***********************************************************/
 int main(int argc, char *argv[]){
-  if (argc >= 2){
-    // Obligitory handling of "version" and "help"
-    if (!strcmp(argv[1], "--version")){
-      printf("Open Dice 0.1\n");
-      printf("Copyright (C) 2016 TheGreatS\n");
-      printf("License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>\n");
-      printf("This is free software: you are free to change and redistribute it.\n");
-      printf("There is NO WARRANTY, to the extent permitted by law.\n");
-      return 0;
-    } else if (!strcmp(argv[1], "--help") || !strcmp(argv[1], "-h")){
-      char line[100];
-      FILE *fptr;
-      if ((fptr = fopen("help.txt", "r")) == NULL){
-        printf("ERROR: help file missing");
-        exit(1);
-      }
-      while(fgets(line, 100, fptr))
-        printf("%s", line);
-      fclose(fptr);
-      return 0;
+    struct arguments arguments;
+
+    // set defaults
+    arguments.verbose = 0;
+
+    arguments.best = 0;
+    arguments.best_type = 'h';
+    arguments.best_num = 1;
+
+    arguments.target = 0;
+    arguments.target_inequality[0] = '=';
+    arguments.target_inequality[1] = '\0';
+    arguments.target_num = 0;
+
+    arguments.multiple = 0;
+    arguments.multiple_num = 1;
+
+    arguments.graph = 1;
+    arguments.graph_inequality[0] = '=';
+    arguments.graph_inequality[1] = '\0';
+
+    // parse arguments
+    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+
+    // parse equation
+    int coin = 0;
+    int coin_total = 0;
+    int coin_count = 0;
+    /*  0: no coin, or coin flip is part of a larger equation
+     *  1: 1 coin
+     * -1: multi-coin
+     */
+    Equation *equation = parse_equation(&arguments);
+    if (equation->op_count == 1 && equation->operators[0] == 'c') {
+        if (arguments.multiple == 0)
+            coin = 1;
+        else
+            coin = -1;
+    } else if (equation->op_count == 2 && equation->operators[1] == 'c') {
+        coin = -1;
     }
-    // Store potential die rolls
-    int dice[argc];
-    for (int i = 0; i < argc; i++){
-      dice[i] = 1;
+    // evaluate equation
+    time_t t;
+    srand((unsigned) time(&t));
+    int target_true = 0;
+    int target_false = 0;
+    double result = 0;
+    for (int i = 0; i < arguments.multiple_num; i++) {
+        int err = evaluate_equation(&result, equation, &arguments);
+        if (err != 0) {
+            printf("ERROR: Not enough numbers for the %c operator\n", err);
+        } else {
+            if (arguments.target) {
+                if (arguments.verbose || !arguments.multiple) {
+                    printf("%s\n", target_inequality(result, &arguments) ? "true" : "false");
+                }
+                if (arguments.multiple) {
+                    if (target_inequality(result, &arguments)) {
+                        target_true++;
+                    } else {
+                        target_false++;
+                    }
+                }
+            } else {
+                if (coin == 0) {
+                    printf("%f\n", result);
+                } else if (coin == 1) {
+                    printf("%s\n", result ? "heads" : "tails");
+                } else if (coin == -1) {
+                    if (equation->num_count == 0)
+                        coin_total += 1;
+                    else
+                        coin_total += equation->numbers[0];
+                    coin_count += result;
+                }
+            }
+        }
     }
-    // Check for relevant tags
-    int verbose = 0;
-    int best = 0;
-    int bestNum = 0;
-    int ineq = 0;
-    int mult = 1;
-    int heads = 0;
-    int tails = 0;
-    float target = 0;
-    for (int i = 1; i < argc; i++){
-      // check for tags
-      if (!strcmp(argv[i], "--verbose") || !strcmp(argv[i], "-v")){
-        dice[i] = 0;
-        verbose = 1;
-        continue;
-      } else if (!strcmp(argv[i], "--target") || !strcmp(argv[i], "-t")){
-        char *targetNumChar = (argv[i+1] != NULL ? argv[i+1] : "a");
-        // set the potential dice
-        dice[i+1] = 0;
-        dice[i] = 0;
-        ineq = targetNum(targetNumChar, &target);
-        if (ineq == 0){
-          printf("ERROR: target number not found\n");
-          continue;
-        }
-        continue;
-      } else if (!strcmp(argv[i], "--best") || !strcmp(argv[i], "-b")){
-        char *bestArg = argv[i+1];
-        // set the potential dice
-        dice[i+1] = 0;
-        dice[i] = 0;
-        bestNum = 1;
-        if (argv[i+1] == NULL){
-          best = 0;
-        } else {
-          switch(bestArg[0]){
-          case 't':
-            best = 1;// get the top
-            break;
-          case 'b':
-            best = -1;// get the bottom
-            break;
-          default:
-            best = 0;// use the default
-            break;
-          }
-        }
-        if (best == 0){
-          float bestFloat = 0;
-          bool exists = isFloat(&bestArg[0], &bestFloat);
-          bestNum = (exists ? (int)bestFloat : 1);
-        } else {
-          float bestFloat = 0;
-          bool exists = isFloat(&bestArg[1], &bestFloat);
-          bestNum = (exists ? (int)bestFloat : 1);
-        }
-        continue;
-      } else if (!strcmp(argv[i], "--multiple") || !strcmp(argv[i], "-m")){
-        char *multiArg = argv[i+1];
-        dice[i+1] = 0;
-        dice[i] = 0;
-        if (argv[i+1] == NULL){
-          mult = 1;
-        } else {
-          float multiple = 0;
-          bool isNum = isFloat(&multiArg[0], &multiple);
-          mult = (isNum ? (int)multiple : 1);
-        }
-        continue;
-      } // IF ELSE CHAIN END
-    }// FOR LOOP END
-    // use the given equation
-    int hasEq = 0;// was an equation provided?
-    float ans = 0;
-    float total = 0;
-    // seed the random number generator using the current time
-    srandom(time(NULL));// TODO find a better way to do this
-    // iterate for the number of multiples
-    int success = 0;
-    for (int j = 0; j < mult; j++){
-      // iterate through all the arguments to find equations
-      for (int i = 1; i < argc; i++){
-        if (dice[i] == 1){
-          hasEq = 1; // there is an equation in the given input
-          // check if it's a coin or die
-          if (!strcmp(argv[i], "coin")){
-            dice[i+1] = 0;
-            float coinNum = 0;
-            bool isNum = isFloat(&argv[i+1][0], &coinNum);
-            if (argv == NULL || !isNum){
-              coinNum = 1;
-            }
-            for (int i = 0; i < coinNum; i++){
-              long side = random_at_most(1);
-              if (side == 1){
-                heads++;
-                if (verbose == 1 && (coinNum > 1 || mult > 1))
-                  printf("heads");
-              } else {
-                tails++;
-                if (verbose == 1 && (coinNum > 1 || mult > 1))
-                  printf("tails");
-              }
-              if (i < coinNum-1 && verbose == 1){
-                printf("\n");
-              }
-            }
-          } else {
-            ans = solve(argv[i], verbose, best, bestNum);
-          }
-          success = 0;
-          if (verbose == 1 && heads+tails == 0){
-            char str[50];
-            nDecimals(str, ans, 3);
-            morphNumericString(str, 3);
-            printf("%s", str);
-          }
-          if (ineq != 0){
-            switch (ineq){
-            case 1:// equal to
-              if (ans == target){
-                success = 1;
-              }
-              break;
-            case 2:// less than
-              if (ans < target){
-                success = 1;
-              }
-              break;
-            case 3:// less than or equal to
-              if (ans <= target){
-                success = 1;
-              }
-              break;
-            case 4:// greater than
-              if (ans > target){
-                success = 1;
-              }
-              break;
-            case 5:// greater than or equal to
-              if (ans >= target){
-                success = 1;
-              }
-              break;
-            default:
-              break;
-            }
-            total += success;
-            if (verbose == 1){
-              printf(": %s",(success == 0 ? "failure" : "success"));
-            }
-          } else if (ineq == 0 || verbose == 1) {
-            total += ans;
-          }// Inequality comparison end
-          if (verbose == 1 && (heads+tails > 1 || mult > 1)){
-            printf("\n");
-          }
-        }
-      }// ARGUMENT LOOP END
-      // default to 1d6
-      if (hasEq == 0){
-        ans = solve("1d6", verbose, best, bestNum);
-        total += ans;
-        char str[50];
-        nDecimals(str, ans, 3);
-        morphNumericString(str, 3);
-        printf("%s\n", str);
-      }
-    }// MULT LOOP END
-    // print the results
-    if (mult > 1){
-      if (heads == 0 && tails == 0){
-        char str[50];
-        nDecimals(str, total, 3);
-        morphNumericString(str, 3);
-        printf("total%s %s\n", (ineq != 0 ? " success:" : ":") , str);
-      } else {
-        printf("heads: %d\ntails: %d\n", heads, tails);
-      }
-    } else if (ineq == 0 && verbose == 0 && heads+tails == 0) {
-      char str[50];
-      nDecimals(str, ans, 3);
-      morphNumericString(str, 3);
-      printf("%s\n", str);
-    } else if (ineq != 0 && verbose == 0){
-      printf("%s\n", (total > 0 ? "success" : "failure"));
-    } else if (heads > 0 || tails > 0){
-      if (heads + tails > 1){
-        printf("heads: %d\ntails: %d\n", heads, tails);
-      } else if (heads == 1){
-        printf("heads\n");
-      } else if (tails == 1){
-        printf("tails\n");
-      }
-    }
-  } else {
-    // default to rolling 1d6
-    srandom(time(NULL));
-    float ans = solve("1d6", 0, 0, 0);
-    char str[50];
-    nDecimals(str, ans, 3);
-    morphNumericString(str, 3);
-    printf("%s\n", str);
-  }
-  return 0;
+    if (coin == -1)
+        printf("Heads: %d\nTails: %d\n", coin_count, coin_total - coin_count);
+    if (arguments.target && arguments.multiple)
+        printf("True: %d\nFalse: %d\n", target_true, target_false);
+
+    // free memory
+    free(equation->operators);
+    free(equation->numbers);
+    free(equation);
+
+    exit(0);
 }

@@ -3,17 +3,18 @@ Usage : roll [EQUATION] [EQUATION] ... [OPTIONS] ...
       --version                  output version information and exit
   -v, --verbose                  output more detailed information about the
                                  dice being rolled or coins being flipped.
-  -b, --best [TYPE][NUM]         when rolling dice, only add the top/bottom
-                                 NUM dice. TYPE can be t for top or highest
-                                 or b for bottom or lowest. TYPE defaults
-                                 to highest, and NUM defaults to 1.
-  -t, --target [INEQUALITY][NUM] compares the equation result to NUM using
+  -b, --best [TYPE][NUM]         when rolling dice, only add the highest or
+                                 lowest NUM dice. TYPE can be h for highest
+                                 or l for lowest. TYPE defaults to highest,
+                                 and NUM defaults to 1.
+  -t, --target '[INEQUALITY][NUM]' compares the equation result to NUM using
                                  INEQUALITY and outputs whether the result
                                  fits the inequality by outputting
                                  "success" or whether it doesn't by
                                  outputting "failure". Be sure to put
                                  single quotes around '[INEQUALITY][NUM]'.
-                                 INEQUALITY defaults to '='.
+                                 INEQUALITY defaults to '=' and NUM has
+                                 no default.
   -m, --multiple [NUM]           repeat the given equations NUM times.
 
   COINS
@@ -22,7 +23,7 @@ Usage : roll [EQUATION] [EQUATION] ... [OPTIONS] ...
   number of coins can be flipped by putting an integer after "coin", i.e.
   "roll coin 3" will flip 3 coins and output the number of heads and the
   number of tails.
-  Coin flips and die rolls cannot happen simultaneously.
+  Coin flips and die rolls cannot happen in the same equation.
 
   EQUATIONS
   Any number of equations can be provided. If no equations are provided
@@ -47,5 +48,5 @@ Usage : roll [EQUATION] [EQUATION] ... [OPTIONS] ...
   When using ^ or () there must be single quotes around the equation.
 
 This program is free software. See LICENSE for more information.
-Copyright (C) 2017 TheGreatS
+Copyright (C) 2017 Patchcoat
 Report bugs at github.com/Patchcoat/OpenDice

@@ -2,7 +2,7 @@
 CC = gcc
 
 # Compiler Flags
-CFLAGS = -g -Wall
+CFLAGS = -g -Wall -lm
 
 # the target executable
 TARGET = roll

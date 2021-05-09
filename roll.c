@@ -22,7 +22,6 @@ static char args_doc[] = "EQUATION";
 
 /***********************************************************
  * argument handling
- * TODO rounding
  ***********************************************************/
 static struct argp_option options[] = {
     {"verbose",  'v', 0, 0, "Produce verbose output"},
@@ -470,7 +469,7 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
 }
 
 /***********************************************************
- * TODO graph
+ * graph
  ***********************************************************/
 void graph(struct arguments arguments) {
 }

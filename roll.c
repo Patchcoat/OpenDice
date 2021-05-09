@@ -243,6 +243,9 @@ Equation *parse_equation(struct arguments *arguments) {
                 arg[i] = 'n';
             } else if (arg[i] == '+' && (i == 0 || (ISOPERATOR(i-1)))) {
                 arg[i] = 'p';
+            } else if ((arg[i] == '(' && i != 0 && (ISNUMEXTENDED(i-1))) ||
+                    (arg[i] == ')' && arg[i+1] != '\0' && (ISNUMEXTENDED(i+1)))) {
+                op_stack[++stack_top] = '*';
             }
             if (stack_top < 0) {
                 op_stack[++stack_top] = arg[i++];
@@ -337,7 +340,7 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
         }
     }
     if (count_frac > 0) {
-        rolls[floor(count)] = (!coin + rand() % (int) die_int) * count_frac;
+        rolls[(int) floor(count)] = (!coin + rand() % (int) die_int) * count_frac;
     }
 
     int start = 0;

@@ -338,7 +338,7 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
         }
     }
     if (count_frac > 0) {
-        rolls[(int) count] = (!coin + rand() % (int) die_int) * count_frac;
+        rolls[floor(count)] = (!coin + rand() % (int) die_int) * count_frac;
     }
 
     int start = 0;

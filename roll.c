@@ -243,8 +243,7 @@ Equation *parse_equation(struct arguments *arguments) {
                 arg[i] = 'n';
             } else if (arg[i] == '+' && (i == 0 || (ISOPERATOR(i-1)))) {
                 arg[i] = 'p';
-            } else if ((arg[i] == '(' && i != 0 && (ISNUMEXTENDED(i-1))) ||
-                    (arg[i] == ')' && arg[i+1] != '\0' && (ISNUMEXTENDED(i+1)))) {
+            } else if (arg[i] == '(' && i != 0 && ((ISNUMEXTENDED(i-1)) || arg[i-1] == ')')) {
                 op_stack[++stack_top] = '*';
             }
             if (stack_top < 0) {
@@ -257,6 +256,8 @@ Equation *parse_equation(struct arguments *arguments) {
                         equation->operators[equation->op_count++] = op_stack[stack_top--];
                     if (op_stack[stack_top] == '(')
                         stack_top--;
+                    if (ISNUMEXTENDED(i+1))
+                        op_stack[++stack_top] = '*';
                     i++;
                 } else {
                     while (stack_top >= 0) {

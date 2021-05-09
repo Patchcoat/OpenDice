@@ -1,51 +1,46 @@
-Usage : roll [EQUATION] [EQUATION] ... [OPTIONS] ...
-  -h, --help                     display this help and exit
-      --version                  output version information and exit
-  -v, --verbose                  output more detailed information about the
-                                 dice being rolled or coins being flipped.
-  -b, --best [TYPE][NUM]         when rolling dice, only add the highest or
-                                 lowest NUM dice. TYPE can be h for highest
-                                 or l for lowest. TYPE defaults to highest,
-                                 and NUM defaults to 1.
-  -t, --target '[INEQUALITY][NUM]' compares the equation result to NUM using
-                                 INEQUALITY and outputs whether the result
-                                 fits the inequality by outputting
-                                 "success" or whether it doesn't by
-                                 outputting "failure". Be sure to put
-                                 single quotes around '[INEQUALITY][NUM]'.
-                                 INEQUALITY defaults to '=' and NUM has
-                                 no default.
-  -m, --multiple [NUM]           repeat the given equations NUM times.
+--help output
 
-  COINS
-  If the first item after roll is "coin", i.e. "roll coin" then a coin
-  will be flipped and the result, heads or tails, will be displayed. A
-  number of coins can be flipped by putting an integer after "coin", i.e.
-  "roll coin 3" will flip 3 coins and output the number of heads and the
-  number of tails.
-  Coin flips and die rolls cannot happen in the same equation.
+Usage: roll [OPTION...] EQUATION
+Documentation
 
-  EQUATIONS
-  Any number of equations can be provided. If no equations are provided
-  then 1d6 is provided by default.
-  
-  OPERATIONS AND THEIR ORDER
-  Operators are executed in the following order, the highest operations
-  having the highest priority. For operators that share priority they are
-  executed left to right, with the exception of exponents which are
-  executed right to left.
-  ()     items in parenthesis have the highest priority
-  xdy    roll y sided die x times.
-         x defaults to 1
-         y defaults to 6
-  x^y    put x to the power of y, y must be an integer or will be
-         converted to one
-  x*y    multiply x by y.....shares priority with division
-         multiplication can also take the form (x)(y), x(y), and (x)y
-  x/y    divide x by y.......shares priority with multiplication
-  x+y    add x to y..........shares priority with subtraction
-  x-y    subtract y from x...shares priority with addition
-  When using ^ or () there must be single quotes around the equation.
+  -b, --best[=TYPENUM]       Keep the best NUM rolls in an equation and set the
+                             rest to 0. A TYPE, h (highest) or l (lowest), and
+                             NUM of rolls to select can be specified, in that
+                             order. TYPE is h and NUM is 1 by default
+  -g, --graph[=INEQUALITY]   NOT CURRENTLY SUPPORTED. Graph the probability of
+                             every possible result. INEQUALITY is '=' by
+                             default meaning the probability a roll is equal to
+                             a given result
+  -m, --multiple=NUM         Repeat the given equations NUM times
+  -t, --target=[INEQUALITY]NUM   Compare the result against NUM using
+                             INEQUALITY. INEQUALITY is '=' by default
+  -v, --verbose              Produce verbose output
+  -?, --help                 Give this help list
+      --usage                Give a short usage message
+  -V, --version              Print program version
+
+Mandatory or optional arguments to long options are also mandatory or optional
+for any corresponding short options.
+
+Additional information
+OPERATIONS AND THEIR ORDER
+Operators are executed in the following order, the highest operations
+having the highest priority. For operators that share priority they are
+executed left to right, with the exception of exponents, coin flipping, and
+factorial which are executed right to left.
+()     items in parenthesis have the highest priority
+xdy    roll y sided die x times.
+       Shares precedence with coin flipping
+xc     flip a coin x times. If x is omited then flip the coin once.
+       Shares precedence with die rolling
+x^y    put x to the power of y, y must be an integer or will be
+       converted to one. Shares priority with factorial
+x!     factorial x. Shares precedence with exponent
+x*y    multiply x by y. Shares precedence with division
+x/y    divide x by y. Shares precedence with multiplication
+x+y    add x to y. Shares precedence with subtraction
+x-y    subtract y from x. Shares precedence with addition
+When using ^, !, * or () there must be quotes around the equation.
 
 This program is free software. See LICENSE for more information.
 Copyright (C) 2017 Patchcoat

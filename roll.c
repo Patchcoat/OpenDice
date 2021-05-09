@@ -32,7 +32,7 @@ static struct argp_option options[] = {
         "Compare the result against NUM using INEQUALITY. INEQUALITY is '=' by default"},
     {"multiple", 'm', "NUM", 0, "Repeat the given equations NUM times"},
     {"graph", 'g', "INEQUALITY", OPTION_ARG_OPTIONAL,
-        "Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
+        "NOT CURRENTLY SUPPORTED. Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
     {0}
 };
 

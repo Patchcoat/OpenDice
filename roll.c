@@ -32,6 +32,8 @@ static struct argp_option options[] = {
     {"multiple", 'm', "NUM", 0, "Repeat the given equations NUM times"},
     {"graph", 'g', "INEQUALITY", OPTION_ARG_OPTIONAL,
         "NOT CURRENTLY SUPPORTED. Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
+    {"round", 'r', "TYPE", OPTION_ARG_OPTIONAL, 
+        "Round the final result to the nearest integer. TYPE is what direction to round, (u)p, (d)own, (c)losest. Defaults to closest."},
     {0}
 };
 

@@ -54,6 +54,9 @@ struct arguments {
 
     int graph;
     char graph_inequality[4];
+
+    int round;
+    char round_type;
 };
 
 int str_to_ineq(char *arg, char *ineq) {
@@ -127,6 +130,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
             if (ISINEQ(0)) {
                 str_to_ineq(arg, arguments->graph_inequality);
             }
+        } break;
+        case 'r': {
+            arguments->round = 1;
+            if (arg == 0)
+                break;
+            if (arg[0] != 'u' && arg[0] != 'd' && arg[0] != 'c')
+                return EINVAL;
+            arguments->round_type = arg[0];
         } break;
         case ARGP_KEY_ARG: {
             if (state->arg_num >= 1)
@@ -537,12 +548,20 @@ int main(int argc, char *argv[]){
     arguments.multiple = 0;
     arguments.multiple_num = 1;
 
-    arguments.graph = 1;
+    arguments.graph = 0;
     arguments.graph_inequality[0] = '=';
     arguments.graph_inequality[1] = '\0';
 
+    arguments.round = 0;
+    arguments.round_type = 'c';
+
     // parse arguments
-    argp_parse(&argp, argc, argv, 0, 0, &arguments);
+    error_t err = argp_parse(&argp, argc, argv, 0, 0, &arguments);
+
+    if (err == EINVAL) {
+        printf("ERROR: Invalid Arguments\n");
+        return EINVAL;
+    }
 
     // parse equation
     int coin = 0;

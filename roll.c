@@ -499,7 +499,7 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
 }
 
 /***********************************************************
- * graph
+ * Graph
  ***********************************************************/
 void graph(struct arguments arguments) {
 }
@@ -525,6 +525,31 @@ int target_inequality(double result, struct arguments *arguments) {
         return result > arguments->target_num;
     }
     return result == arguments->target_num;
+}
+
+/***********************************************************
+ * Rounding
+ ***********************************************************/
+void rounding(struct arguments *arguments, float *result){
+    if (arguments->round) {
+        switch(arguments->round_type) {
+        case 'u':{
+            *result = ceil(*result);
+            if (arguments->verbose)
+                printf("Rounding Up\n");
+        } break;
+        case 'd':{
+            *result = floor(*result);
+            if (arguments->verbose)
+                printf("Rounding Down\n");
+        } break;
+        case 'c':{
+            *result = round(*result);
+            if (arguments->verbose)
+                printf("Rounding to the Closest\n");
+        } break;
+        }
+    }
 }
 
 /***********************************************************
@@ -591,25 +616,7 @@ int main(int argc, char *argv[]){
         if (err != 0) {
             printf("ERROR: Not enough numbers for the %c operator\n", err);
         } else {
-            if (arguments.round) {
-                switch(arguments.round_type) {
-                case 'u':{
-                    result = ceil(result);
-                    if (arguments.verbose)
-                        printf("Rounding Up\n");
-                } break;
-                case 'd':{
-                    result = floor(result);
-                    if (arguments.verbose)
-                        printf("Rounding Down\n");
-                } break;
-                case 'c':{
-                    result = round(result);
-                    if (arguments.verbose)
-                        printf("Rounding to the Closest\n");
-                } break;
-                }
-            }
+            rounding(&arguments, &result);
             if (arguments.target) {
                 if (arguments.verbose || !arguments.multiple) {
                     printf("%s\n", target_inequality(result, &arguments) ? "true" : "false");

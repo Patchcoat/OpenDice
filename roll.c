@@ -530,7 +530,7 @@ int target_inequality(double result, struct arguments *arguments) {
 /***********************************************************
  * Rounding
  ***********************************************************/
-void rounding(struct arguments *arguments, float *result){
+void rounding(struct arguments *arguments, double *result){
     if (arguments->round) {
         switch(arguments->round_type) {
         case 'u':{

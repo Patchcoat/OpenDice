@@ -127,8 +127,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state) {
         } break;
         case 'g': {
             arguments->graph = 1;
-            if (ISINEQ(0)) {
-                str_to_ineq(arg, arguments->graph_inequality);
+            if (arg != 0){
+                if (ISINEQ(0)) {
+                    str_to_ineq(arg, arguments->graph_inequality);
+                }
             }
         } break;
         case 'r': {
@@ -409,11 +411,15 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
 
 /***********************************************************
  * Evaluate equation
+ * graph_min_max
+ * 0: provide the minimum value for every die roll
+ * 1: provide the maximum value for every die roll
  * return
  * 0: success
  * char: not enough numbers for the operator
  ***********************************************************/
-int evaluate_equation(double *result_out, Equation *equation, struct arguments *arguments) {
+int evaluate_equation(double *result_out, Equation *equation, struct arguments *arguments,
+        int graph_min_max) {
     double *num_stack = malloc(sizeof(double*) * (equation->num_count + 1));
     int num_count = 0;
     int stack_top = -1;
@@ -474,15 +480,31 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
             case 'd': { // roll dice
                 if (stack_top < 1)
                     return 'd';
-                result = roll(num_stack[stack_top - 1], num_stack[stack_top], 0, arguments);
+                if (arguments->graph) {
+                    if (graph_min_max) {
+                        result = num_stack[stack_top - 1] * num_stack[stack_top];
+                    } else {
+                        result = num_stack[stack_top - 1];
+                    }
+                } else {
+                    result = roll(num_stack[stack_top - 1], num_stack[stack_top], 0, arguments);
+                }
                 num_stack[--stack_top] = result;
             } break;
             case 'c': {
                 if (stack_top < 0) {
-                    result = roll(1, 2, 1, arguments);
+                    if (arguments->graph) {
+                        result = graph_min_max;
+                    } else {
+                        result = roll(1, 2, 1, arguments);
+                    }
                     stack_top++;
                 } else {
-                    result = roll(num_stack[stack_top], 2, 1, arguments);
+                    if (arguments->graph) {
+                        result = graph_min_max * num_stack[stack_top];
+                    } else {
+                        result = roll(num_stack[stack_top], 2, 1, arguments);
+                    }
                 }
                 num_stack[stack_top] = result;
             } break;
@@ -496,12 +518,6 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
 
     free(num_stack);
     return 0;
-}
-
-/***********************************************************
- * Graph
- ***********************************************************/
-void graph(struct arguments arguments) {
 }
 
 /***********************************************************
@@ -550,6 +566,23 @@ void rounding(struct arguments *arguments, double *result){
         } break;
         }
     }
+}
+
+/***********************************************************
+ * Graph
+ ***********************************************************/
+void graph(struct arguments *arguments, Equation *equation) {
+    printf("graphing\n");
+    double min = 0;
+    double max = 0;
+    int err = evaluate_equation(&min, equation, arguments, 0);
+    if (err != 0) {
+        printf("ERROR: Not enough numbers for the %c operator\n", err);
+        return;
+    }
+    evaluate_equation(&max, equation, arguments, 1);
+    printf("Min: %f\n", min);
+    printf("Max: %f\n", max);
 }
 
 /***********************************************************
@@ -605,6 +638,15 @@ int main(int argc, char *argv[]){
     } else if (equation->op_count == 2 && equation->operators[1] == 'c') {
         coin = -1;
     }
+    if (arguments.graph) {
+        graph(&arguments, equation);
+        // free memory
+        free(equation->operators);
+        free(equation->numbers);
+        free(equation);
+
+        exit(0);
+    }
     // evaluate equation
     time_t t;
     srand((unsigned) time(&t));
@@ -612,7 +654,7 @@ int main(int argc, char *argv[]){
     int target_false = 0;
     double result = 0;
     for (int i = 0; i < arguments.multiple_num; i++) {
-        int err = evaluate_equation(&result, equation, &arguments);
+        int err = evaluate_equation(&result, equation, &arguments, 0);
         if (err != 0) {
             printf("ERROR: Not enough numbers for the %c operator\n", err);
         } else {

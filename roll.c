@@ -179,7 +179,6 @@ void equation_count(char *arg, int *operator_count, int *number_count) {
         }
     }
 }
-
 int precedence(char *op) {
     switch(*op) {
     case '+':
@@ -206,7 +205,6 @@ int precedence(char *op) {
         return 0;
     }
 }
-
 typedef struct {
     char *operators;
     double *numbers;
@@ -571,6 +569,10 @@ void rounding(struct arguments *arguments, double *result){
 /***********************************************************
  * Graph
  ***********************************************************/
+double probability(Equation *equation, double roll) {
+
+    return 0;
+}
 void graph(struct arguments *arguments, Equation *equation) {
     printf("graphing\n");
     double min = 0;
@@ -583,6 +585,16 @@ void graph(struct arguments *arguments, Equation *equation) {
     evaluate_equation(&max, equation, arguments, 1);
     printf("Min: %f\n", min);
     printf("Max: %f\n", max);
+    // TODO figure out the step length for fractional die counts
+    // run through the equation normally
+    // every time a die roll or coin flip is encountered, build out a probability graph for it
+    // continue on, operators operating on the entire graph rather than just a single number
+    // when another die roll or coin flip is encountered, combine the two probability graphs together
+    //
+    // What it needed
+    // - build out probability graph from roll
+    // - operators operate on an entire probability graph
+    // - combine probability graphs
 }
 
 /***********************************************************

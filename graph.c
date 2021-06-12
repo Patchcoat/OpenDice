@@ -3,39 +3,64 @@
 #include <stdio.h>
 #include "graph.h"
 
+void print_graph_array(Graph **graph_array, int size){
+    for (int i = 0; i < size; i++) {
+        printf("|%p", graph_array[i]);
+    }
+    printf("\n");
+}
+
 Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
     double *num_stack = malloc(sizeof(double*) * (equation->num_count + 1));
     int num_count = 0;
     int stack_top = -1;
     Graph result_graph;
     init_graph(&result_graph, 0);
-    int graph_exists = 0;
-    int graph_position = -1;
+    Graph *graph_array[equation->num_count + 1];
     for (int i = 0; i < equation->op_count; i++) {
         if (equation->operators[i] == '.') {
             num_stack[++stack_top] = equation->numbers[num_count++];
+            graph_array[stack_top] = NULL;
         } else {
             double result = 0;
+            print_graph_array(graph_array, stack_top+1);
+            int on_graph = graph_array[stack_top] != NULL;
+            int prev_graph = graph_array[stack_top - 1] != NULL;
             switch(equation->operators[i]) {
             case '+': { // addition
-                if (graph_exists && (graph_position == stack_top || graph_position == stack_top - 1)) {
-                    for (int j = 0; j < result_graph.size; j++) {
-                        result_graph.graphLines[j].line += 
-                            num_stack[stack_top - (graph_position == stack_top ? 1 : 0)];
+                if (on_graph || prev_graph) {
+                    for (int j = 0; j < result_graph.used; j++) {
+                        if (on_graph && !prev_graph) {
+                            graph_array[stack_top]->graphLines[j].line += num_stack[stack_top - 1];
+                        } else if (!on_graph && prev_graph) {
+                            graph_array[stack_top - 1]->graphLines[j].line += num_stack[stack_top];
+                        } else if (on_graph && prev_graph) {
+                            // TODO add two graphs together
+                        } else {
+                            // How did you get here?
+                        }
+                    }
+                    if (on_graph) {
+                        graph_array[stack_top - 1] = graph_array[stack_top];
+                        result_graph = *graph_array[stack_top - 1];
+                        if (!prev_graph) {
+                            graph_array[stack_top] = NULL;
+                        } else {
+                            free_graph(graph_array[stack_top]);
+                        }
                     }
                     num_stack[--stack_top] = 0;
-                    graph_position = stack_top;
                 } else {
                     result = num_stack[stack_top - 1] + num_stack[stack_top];
                     num_stack[--stack_top] = result;
+                    graph_array[stack_top] = NULL;
                 }
             } break;
             case 'd': { // roll dice
                 free_graph(&result_graph);
                 result_graph = graph('d', num_stack[stack_top - 1], num_stack[stack_top]);
                 num_stack[--stack_top] = 0;
-                graph_exists = 1;
-                graph_position = stack_top;
+                graph_array[stack_top] = &result_graph;
             } break;
             default:
                 break;

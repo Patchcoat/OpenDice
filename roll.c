@@ -233,13 +233,13 @@ Equation *parse_equation(struct arguments *arguments) {
             } else if (arg[i] == '(' && i != 0 && ((ISNUMEXTENDED(i-1)) || arg[i-1] == ')')) {
                 op_stack[++stack_top] = '*';
             } else if (arg[i] == 'd') {
-                if (i == 0 || (i > 0 && !(ISNUMEXTENDED(i-1)))) {
+                if (i == 0 || (i > 0 && !(ISNUMEXTENDED(i-1)) && arg[i-1] != ')')) {
                     equation->numbers = realloc(
                             equation->numbers, sizeof(double*) * (equation->num_count + 1));
                     equation->numbers[equation->num_count++] = 1;
                     equation->operators[equation->op_count++] = '.';
                 }
-                if (!(ISNUMEXTENDED(i+1))) {
+                if (!(ISNUMEXTENDED(i+1)) && arg[i+1] != '(') {
                     equation->numbers = realloc(
                             equation->numbers, sizeof(double*) * (equation->num_count + 1));
                     equation->numbers[equation->num_count++] = 6;

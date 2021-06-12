@@ -3,6 +3,7 @@
 #include <string.h>
 #include <argp.h>
 #include <math.h>
+#include "graph.h"
 
 #define ISNUM(index) arg[index] >= '0' && arg[index] <= '9'
 #define ISNUMEXTENDED(index) (arg[index] >= '0' && arg[index] <= '9') || \
@@ -15,6 +16,7 @@
                           arg[index] == '(' || arg[index] == ')' || \
                           arg[index] == '!' || arg[index] == '^'
 #define MAXEQUATIONNUMSIZE 256
+#define MAXGRAPHBARSIZE 10
 
 const char *argp_program_version = "OpenDice 0.2";
 static char doc[] = "Documentation";
@@ -35,28 +37,6 @@ static struct argp_option options[] = {
     {"round", 'r', "TYPE", OPTION_ARG_OPTIONAL, 
         "Round the final result to the nearest integer. TYPE is what direction to round, (u)p, (d)own, (c)losest. Defaults to closest."},
     {0}
-};
-
-struct arguments {
-    char *equation;
-    int verbose;
-
-    int best;
-    char best_type;
-    int best_num;
-
-    int target;
-    char target_inequality[4];
-    float target_num;
-
-    int multiple;
-    int multiple_num;
-
-    int graph;
-    char graph_inequality[4];
-
-    int round;
-    char round_type;
 };
 
 int str_to_ineq(char *arg, char *ineq) {
@@ -205,12 +185,6 @@ int precedence(char *op) {
         return 0;
     }
 }
-typedef struct {
-    char *operators;
-    double *numbers;
-    int op_count;
-    int num_count;
-} Equation;
 void display_equation(Equation *equation) {
     int num_count = 0;
     printf("Equation: ");
@@ -416,8 +390,7 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
  * 0: success
  * char: not enough numbers for the operator
  ***********************************************************/
-int evaluate_equation(double *result_out, Equation *equation, struct arguments *arguments,
-        int graph_min_max) {
+int evaluate_equation(double *result_out, Equation *equation, struct arguments *arguments) {
     double *num_stack = malloc(sizeof(double*) * (equation->num_count + 1));
     int num_count = 0;
     int stack_top = -1;
@@ -478,31 +451,15 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
             case 'd': { // roll dice
                 if (stack_top < 1)
                     return 'd';
-                if (arguments->graph) {
-                    if (graph_min_max) {
-                        result = num_stack[stack_top - 1] * num_stack[stack_top];
-                    } else {
-                        result = num_stack[stack_top - 1];
-                    }
-                } else {
-                    result = roll(num_stack[stack_top - 1], num_stack[stack_top], 0, arguments);
-                }
+                result = roll(num_stack[stack_top - 1], num_stack[stack_top], 0, arguments);
                 num_stack[--stack_top] = result;
             } break;
             case 'c': {
                 if (stack_top < 0) {
-                    if (arguments->graph) {
-                        result = graph_min_max;
-                    } else {
-                        result = roll(1, 2, 1, arguments);
-                    }
+                    result = roll(1, 2, 1, arguments);
                     stack_top++;
                 } else {
-                    if (arguments->graph) {
-                        result = graph_min_max * num_stack[stack_top];
-                    } else {
-                        result = roll(num_stack[stack_top], 2, 1, arguments);
-                    }
+                    result = roll(num_stack[stack_top], 2, 1, arguments);
                 }
                 num_stack[stack_top] = result;
             } break;
@@ -513,6 +470,71 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
     }
 
     *result_out = num_stack[0];
+
+    free(num_stack);
+    return 0;
+}
+int verify_equation(double *result_out, Equation *equation, struct arguments *arguments) {
+    double *num_stack = malloc(sizeof(double*) * (equation->num_count + 1));
+    int num_count = 0;
+    int stack_top = -1;
+    for (int i = 0; i < equation->op_count; i++) {
+        if (equation->operators[i] == '.') {
+            num_stack[++stack_top] = equation->numbers[num_count++];
+        } else {
+            switch(equation->operators[i]) {
+            case '+': { // addition
+                if (stack_top < 1)
+                    return '+';
+                --stack_top;
+            } break;
+            case '-': { // subtraction
+                if (stack_top < 1)
+                    return '-';
+                --stack_top;
+            } break;
+            case '*': { // multiplication
+                if (stack_top < 1)
+                    return '*';
+                --stack_top;
+            } break;
+            case '/': { // division
+                if (stack_top < 1)
+                    return '/';
+                --stack_top;
+            } break;
+            case '^': { // exponentiation
+                if (stack_top < 1)
+                    return '^';
+                --stack_top;
+            } break;
+            case '!': { // factorial
+                if (stack_top < 0)
+                    return '!';
+            } break;
+            case 'n': { // negation
+                if (stack_top < 0)
+                    return '-';
+            } break;
+            case 'p': { // change nothing
+                if (stack_top < 0)
+                    return '+';
+            } break;
+            case 'd': { // roll dice
+                if (stack_top < 1)
+                    return 'd';
+                --stack_top;
+            } break;
+            case 'c': {
+                if (stack_top < 0) {
+                    stack_top++;
+                }
+            } break;
+            default:
+                break;
+            }
+        }
+    }
 
     free(num_stack);
     return 0;
@@ -568,33 +590,36 @@ void rounding(struct arguments *arguments, double *result){
 
 /***********************************************************
  * Graph
+ * takes in an equation with a single roll or coin flip
+ * return an array of probabilities, and the length
  ***********************************************************/
-double probability(Equation *equation, double roll) {
-
-    return 0;
-}
-void graph(struct arguments *arguments, Equation *equation) {
-    printf("graphing\n");
-    double min = 0;
-    double max = 0;
-    int err = evaluate_equation(&min, equation, arguments, 0);
+void draw_graph(struct arguments *arguments, Equation *equation) {
+    double null;
+    int err = verify_equation(&null, equation, arguments);
     if (err != 0) {
         printf("ERROR: Not enough numbers for the %c operator\n", err);
         return;
     }
-    evaluate_equation(&max, equation, arguments, 1);
-    printf("Min: %f\n", min);
-    printf("Max: %f\n", max);
-    // TODO figure out the step length for fractional die counts
-    // run through the equation normally
-    // every time a die roll or coin flip is encountered, build out a probability graph for it
-    // continue on, operators operating on the entire graph rather than just a single number
-    // when another die roll or coin flip is encountered, combine the two probability graphs together
-    //
-    // What it needed
-    // - build out probability graph from roll
-    // - operators operate on an entire probability graph
-    // - combine probability graphs
+    Graph result = evaluate_equation_graph(equation, arguments);
+    if (arguments->verbose) {
+        printf("Graphing\n");
+        printf("Min: %f\n", result.min);
+        printf("Max: %f\n", result.max);
+    }
+    // bar_count is (probability - result.min) / (result.max - result.min) * (MAXGRAPHBARSIZE - 1) + 1
+    // a bit of algebra lets us precalculate so it doesn't have to be done every loop
+    double mult = (MAXGRAPHBARSIZE - 1) / (result.max - result.min);
+    double add = -result.min * mult + 1;
+    for (int i = 0; i < result.used; i++) {
+        printf("%10f: ", result.graphLines[i].line);
+        double probability = result.graphLines[i].probability;
+        int bar_count = round(probability * mult + add);
+        for (int i = 0; i < bar_count; i++) {
+            printf("#");
+        }
+        printf(" %f\n", probability);
+    }
+    free_graph(&result);
 }
 
 /***********************************************************
@@ -651,13 +676,14 @@ int main(int argc, char *argv[]){
         coin = -1;
     }
     if (arguments.graph) {
-        graph(&arguments, equation);
+        draw_graph(&arguments, equation);
         // free memory
         free(equation->operators);
         free(equation->numbers);
         free(equation);
 
         exit(0);
+        return 0;
     }
     // evaluate equation
     time_t t;
@@ -666,7 +692,7 @@ int main(int argc, char *argv[]){
     int target_false = 0;
     double result = 0;
     for (int i = 0; i < arguments.multiple_num; i++) {
-        int err = evaluate_equation(&result, equation, &arguments, 0);
+        int err = evaluate_equation(&result, equation, &arguments);
         if (err != 0) {
             printf("ERROR: Not enough numbers for the %c operator\n", err);
         } else {

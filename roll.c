@@ -33,7 +33,7 @@ static struct argp_option options[] = {
         "Compare the result against NUM using INEQUALITY. INEQUALITY is '=' by default"},
     {"multiple", 'm', "NUM", 0, "Repeat the given equations NUM times"},
     {"graph", 'g', "INEQUALITY", OPTION_ARG_OPTIONAL,
-        "NOT CURRENTLY SUPPORTED. Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
+        "MINIMAL SUPPORT, ONLY WORKS FOR DIE ROLLS, AND ONLY IF THERE ARE NO OPERATORS OTHER THAN THE DIE ROLL OPERATOR. Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
     {"round", 'r', "TYPE", OPTION_ARG_OPTIONAL, 
         "Round the final result to the nearest integer. TYPE is what direction to round, (u)p, (d)own, (c)losest. Defaults to closest."},
     {0}
@@ -474,10 +474,11 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
     free(num_stack);
     return 0;
 }
-int verify_equation(double *result_out, Equation *equation, struct arguments *arguments) {
+int verify_equation(Equation *equation, struct arguments *arguments) {
     double *num_stack = malloc(sizeof(double*) * (equation->num_count + 1));
     int num_count = 0;
     int stack_top = -1;
+    int roll_or_flip = 0;
     for (int i = 0; i < equation->op_count; i++) {
         if (equation->operators[i] == '.') {
             num_stack[++stack_top] = equation->numbers[num_count++];
@@ -524,18 +525,21 @@ int verify_equation(double *result_out, Equation *equation, struct arguments *ar
                 if (stack_top < 1)
                     return 'd';
                 --stack_top;
+                roll_or_flip = 1;
             } break;
             case 'c': {
                 if (stack_top < 0) {
                     stack_top++;
                 }
+                roll_or_flip = 1;
             } break;
             default:
                 break;
             }
         }
     }
-
+    if (!roll_or_flip)
+        return 'l';
     free(num_stack);
     return 0;
 }
@@ -594,9 +598,12 @@ void rounding(struct arguments *arguments, double *result){
  * return an array of probabilities, and the length
  ***********************************************************/
 void draw_graph(struct arguments *arguments, Equation *equation) {
-    double null;
-    int err = verify_equation(&null, equation, arguments);
+    int err = verify_equation(equation, arguments);
     if (err != 0) {
+        if (err == 'l') {
+            printf("ERROR: Nothing to graph, must have a die or coin\n");
+            return;
+        }
         printf("ERROR: Not enough numbers for the %c operator\n", err);
         return;
     }
@@ -683,7 +690,6 @@ int main(int argc, char *argv[]){
         free(equation);
 
         exit(0);
-        return 0;
     }
     // evaluate equation
     time_t t;

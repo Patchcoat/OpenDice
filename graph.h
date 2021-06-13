@@ -40,7 +40,8 @@ struct arguments {
     char round_type;
 };
 
-
+// factorial function
+double factorial(double n);
 // evaluate_equation, but performed on an entire graph
 Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments);
 // create and return a graph for a given roll

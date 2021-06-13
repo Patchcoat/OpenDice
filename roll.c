@@ -433,9 +433,7 @@ int evaluate_equation(double *result_out, Equation *equation, struct arguments *
             case '!': { // factorial
                 if (stack_top < 0)
                     return '!';
-                result = 1;
-                for (i = 1; i <= num_stack[stack_top]; i++)
-                    result = result * i;
+                result = factorial(num_stack[stack_top]);
                 num_stack[stack_top] = result;
             } break;
             case 'n': { // negation

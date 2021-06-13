@@ -76,15 +76,15 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
                         }
                     }
                     if (on_graph) {
-                        graph_array[stack_top - 1] = graph_array[stack_top];
+                        printf("on graph\n");
+                        result_graph = graph_array[stack_top];
+                        free_graph(&graph_array[stack_top - 1]);
+                    } else {
+                        printf("prev graph\n");
                         result_graph = graph_array[stack_top - 1];
-                        if (!prev_graph) {
-                            graph_array[stack_top].null = 1;
-                        } else {
-                            free_graph(&graph_array[stack_top]);
-                        }
+                        free_graph(&graph_array[stack_top]);
                     }
-                    num_stack[--stack_top] = 0;
+                    stack_top--;
                 } else {
                     result = num_stack[stack_top - 1] + num_stack[stack_top];
                     num_stack[--stack_top] = result;

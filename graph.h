@@ -10,6 +10,7 @@ typedef struct {
     double min;
     size_t used;
     size_t size;
+    int null;
 } Graph;
 typedef struct {
     char *operators;

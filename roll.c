@@ -621,6 +621,9 @@ void draw_graph(struct arguments *arguments, Equation *equation) {
         printf("%10f: ", result.graphLines[i].line);
         double probability = result.graphLines[i].probability;
         int bar_count = round(probability * mult + add);
+        if (result.max == result.min) {
+            bar_count = 5;
+        }
         for (int i = 0; i < bar_count; i++) {
             printf("#");
         }

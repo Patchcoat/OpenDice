@@ -3,9 +3,9 @@
 #include <stdio.h>
 #include "graph.h"
 
-void print_graph_array(Graph **graph_array, int size){
+void print_graph_array(Graph *graph_array, int size){
     for (int i = 0; i < size; i++) {
-        printf("|%p", graph_array[i]);
+        printf("|%p", &graph_array[i]);
     }
     printf("\n");
 }
@@ -15,52 +15,89 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
     int num_count = 0;
     int stack_top = -1;
     Graph result_graph;
-    init_graph(&result_graph, 0);
-    Graph *graph_array[equation->num_count + 1];
+    Graph graph_array[equation->num_count + 1];
     for (int i = 0; i < equation->op_count; i++) {
         if (equation->operators[i] == '.') {
             num_stack[++stack_top] = equation->numbers[num_count++];
-            graph_array[stack_top] = NULL;
+            init_graph(&graph_array[stack_top], 0);
+            graph_array[stack_top].null = 1;
         } else {
             double result = 0;
             print_graph_array(graph_array, stack_top+1);
-            int on_graph = graph_array[stack_top] != NULL;
-            int prev_graph = graph_array[stack_top - 1] != NULL;
+            int on_graph = !graph_array[stack_top].null;
+            int prev_graph = !graph_array[stack_top - 1].null;
             switch(equation->operators[i]) {
             case '+': { // addition
-                if (on_graph || prev_graph) {
+                if (on_graph && prev_graph) {
+                    Graph temp_graph;
+                    init_graph(&temp_graph, 
+                            graph_array[stack_top].used + graph_array[stack_top - 1].used);
+                    printf("Combining Graphs %d %d\n", (int)graph_array[stack_top].used, 
+                            (int)graph_array[stack_top-1].used);
+                    for (int j = 0; j < graph_array[stack_top].used; j++) {
+                        for (int k = 0; k < graph_array[stack_top-1].used; k++) {
+                            GraphLine *on_line = &graph_array[stack_top].graphLines[j];
+                            GraphLine *prev_line = &graph_array[stack_top-1].graphLines[k];
+                            double line = on_line->line + prev_line->line;
+                            double probability = on_line->probability * prev_line->probability;
+                            int index = find_graph_line(&temp_graph, 0, temp_graph.used-1, line);
+                            if (index == -1) {
+                                // TODO
+                                // insert into array so that it remains sorted
+                                // this is probably just the end of the array, but I would like
+                                // a more robust solution just to be absolutely sure
+                                // the following is temporary, it doesn't actually accomplish this
+                                GraphLine graph_line = {.line = line, .probability = probability};
+                                insert_into_graph(&temp_graph, &graph_line);
+                            } else {
+                                temp_graph.graphLines[index].probability += probability;
+                                probability = temp_graph.graphLines[index].probability;
+                            }
+                            // set max
+                            if (probability > temp_graph.max)
+                                temp_graph.max = probability;
+                            // set min
+                            if (probability < temp_graph.min)
+                                temp_graph.min = probability;
+                        }
+                    }
+                    printf("size: %d\n", (int)temp_graph.used);
+                    free_graph(&graph_array[stack_top - 1]);
+                    graph_array[stack_top - 1] = temp_graph;
+                    result_graph = graph_array[stack_top - 1];
+                    free_graph(&graph_array[stack_top]);
+                    stack_top--;
+                } else if (on_graph || prev_graph) {
                     for (int j = 0; j < result_graph.used; j++) {
                         if (on_graph && !prev_graph) {
-                            graph_array[stack_top]->graphLines[j].line += num_stack[stack_top - 1];
+                            graph_array[stack_top].graphLines[j].line += num_stack[stack_top - 1];
                         } else if (!on_graph && prev_graph) {
-                            graph_array[stack_top - 1]->graphLines[j].line += num_stack[stack_top];
-                        } else if (on_graph && prev_graph) {
-                            // TODO add two graphs together
-                        } else {
-                            // How did you get here?
+                            graph_array[stack_top - 1].graphLines[j].line += num_stack[stack_top];
                         }
                     }
                     if (on_graph) {
                         graph_array[stack_top - 1] = graph_array[stack_top];
-                        result_graph = *graph_array[stack_top - 1];
+                        result_graph = graph_array[stack_top - 1];
                         if (!prev_graph) {
-                            graph_array[stack_top] = NULL;
+                            graph_array[stack_top].null = 1;
                         } else {
-                            free_graph(graph_array[stack_top]);
+                            free_graph(&graph_array[stack_top]);
                         }
                     }
                     num_stack[--stack_top] = 0;
                 } else {
                     result = num_stack[stack_top - 1] + num_stack[stack_top];
                     num_stack[--stack_top] = result;
-                    graph_array[stack_top] = NULL;
+                    graph_array[stack_top].null = 1;
                 }
             } break;
             case 'd': { // roll dice
-                free_graph(&result_graph);
-                result_graph = graph('d', num_stack[stack_top - 1], num_stack[stack_top]);
-                num_stack[--stack_top] = 0;
-                graph_array[stack_top] = &result_graph;
+                free_graph(&graph_array[stack_top - 1]);
+                graph_array[stack_top - 1] = graph('d', num_stack[stack_top - 1], num_stack[stack_top]);
+                result_graph = graph_array[stack_top - 1];
+                free_graph(&graph_array[stack_top]);
+                stack_top--;
+                printf("Rolling %d\n", (int)graph_array[stack_top].used);
             } break;
             default:
                 break;
@@ -128,34 +165,9 @@ Graph graph(char op, double left, double right) {
     return graph;
 }
 
-Graph* combine_graphs(char op, Graph* left, Graph* right) {
-    Graph* graph = NULL;
-    switch(op) {
-        case '+':{
-        } break;
-        case '-':{
-        }break;
-        case '*':{
-        }break;
-        case '/':{
-        }break;
-        case '^':{
-        }break;
-        case 'd':{
-        }break;
-        case 'c':{
-        }break;
-        default:
-            break;
-    }
-    free_graph(left);
-    free_graph(right);
-    return graph;
-}
-
 int find_graph_line(Graph* graph, int l, int r, double line) {
     if (r >= l) {
-        int mid = l + (r - 1) / 2;
+        int mid = l + (r - l) / 2;
         if (graph->graphLines[mid].line == line)
             return mid;
 
@@ -174,6 +186,7 @@ void init_graph(Graph* in, size_t initSize) {
     in->size = initSize;
     in->min = 1;
     in->max = 0;
+    in->null = 0;
 }
 void insert_into_graph(Graph* in, GraphLine* element) {
     if (in->used == in->size) {

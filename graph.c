@@ -76,11 +76,9 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
                         }
                     }
                     if (on_graph) {
-                        printf("on graph\n");
                         result_graph = graph_array[stack_top];
                         free_graph(&graph_array[stack_top - 1]);
                     } else {
-                        printf("prev graph\n");
                         result_graph = graph_array[stack_top - 1];
                         free_graph(&graph_array[stack_top]);
                     }

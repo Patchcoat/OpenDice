@@ -48,13 +48,8 @@ Graph graph_combine(int on_graph, int prev_graph, Graph *graph_array, Graph resu
                 double probability = on_line->probability * prev_line->probability;
                 int index = find_graph_line(&temp_graph, 0, temp_graph.used-1, line);
                 if (index == -1) {
-                    // TODO
-                    // insert into array so that it remains sorted
-                    // this is probably just the end of the array, but I would like
-                    // a more robust solution just to be absolutely sure
-                    // the following is temporary, it doesn't actually accomplish this
                     GraphLine graph_line = {.line = line, .probability = probability};
-                    insert_into_graph(&temp_graph, &graph_line);
+                    insert_into_graph_sorted(&temp_graph, &graph_line);
                 } else {
                     temp_graph.graphLines[index].probability += probability;
                     probability = temp_graph.graphLines[index].probability;
@@ -100,12 +95,7 @@ Graph graph_unary(Graph *graph_array, Graph result_graph, int stack_top, double 
     for (int i = 0; i < graph_array[stack_top].used; i++) {
         GraphLine *on_line = &graph_array[stack_top].graphLines[i];
         GraphLine graph_line = {.line = opp(on_line->line), .probability = on_line->probability};
-        // TODO
-        // insert into array so that it remains sorted
-        // this is probably just the end of the array, but I would like
-        // a more robust solution just to be absolutely sure
-        // the following is temporary, it doesn't actually accomplish this
-        insert_into_graph(&temp_graph, &graph_line);
+        insert_into_graph_sorted(&temp_graph, &graph_line);
     }
     free_graph(&graph_array[stack_top]);
     graph_array[stack_top] = temp_graph;
@@ -211,6 +201,17 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
                     stack_top--;
                 }
             } break;
+            case 'c': {
+                if (on_graph || prev_graph) {
+
+                } else {
+                    free_graph(&graph_array[stack_top - 1]);
+                    graph_array[stack_top - 1] = graph('c', num_stack[stack_top - 1], num_stack[stack_top]);
+                    result_graph = graph_array[stack_top - 1];
+                    free_graph(&graph_array[stack_top]);
+                    stack_top--;
+                }
+            } break;
             default:
                 break;
             }
@@ -246,28 +247,71 @@ double calculate_probability(double value, double left, double right) {
 Graph graph(char op, double left, double right) {
     Graph graph;
     init_graph(&graph, (int) left * right);
-    double integral_left;
-    double fractional_left = modf(left, &integral_left);
-    double integral_right;
-    modf(right, &integral_right);
-    if (fractional_left == 0) {
-        int min = (int) integral_left;
-        int max = (int) integral_left * integral_right;
-        for (int i = min; i <= max; i++) {
-            GraphLine line;
-            line.line = i;
-            line.probability = calculate_probability(i, left, right);
-            insert_into_graph(&graph, &line);
+    if (op == 'd') {
+        double integral_left;
+        double fractional_left = modf(left, &integral_left);
+        double integral_right;
+        modf(right, &integral_right);
+        if (fractional_left == 0) {
+            int min = (int) integral_left;
+            int max = (int) integral_left * integral_right;
+            for (int i = min; i <= max; i++) {
+                GraphLine line;
+                line.line = i;
+                line.probability = calculate_probability(i, integral_left, integral_right);
+                insert_into_graph(&graph, &line);
 
-            // set max
-            if (line.probability > graph.max)
-                graph.max = line.probability;
-            // set min
-            if (line.probability < graph.min)
-                graph.min = line.probability;
+                // set max
+                if (line.probability > graph.max)
+                    graph.max = line.probability;
+                // set min
+                if (line.probability < graph.min)
+                    graph.min = line.probability;
+            }
+        } else {
+            int min = (int) integral_left;
+            int max = (int) integral_left * integral_right;
+            for (int i = min; i <= max; i++) {
+                double probability = (1 / integral_right) * 
+                    calculate_probability(i, integral_left, integral_right);
+                for (int j = 1; j <= integral_right; j++) {
+                    GraphLine line;
+                    line.line = i + (fractional_left * j);
+                    line.probability = probability;
+                    int index = find_graph_line(&graph, 0, graph.used-1, line.line);
+                    if (index == -1) {
+                        insert_into_graph_sorted(&graph, &line);
+                    } else {
+                        graph.graphLines[index].probability += line.probability;
+                        line.probability = graph.graphLines[index].probability;
+                    }
+                    // set max
+                    if (line.probability > graph.max)
+                        graph.max = line.probability;
+                    // set min
+                    if (line.probability < graph.min)
+                        graph.min = line.probability;
+                }
+            }
         }
-    } else {
-        //TODO generate fractional graph
+    } else if (op == 'c') {
+        double integral;
+        double fraction = modf(left, &integral);
+        if (fraction == 0) {
+            int min = 0;
+            int max = integral;
+            double probability = 1 / max;
+            graph.max = probability;
+            graph.min = probability;
+            for (int i = min; i <= max; i++) {
+                GraphLine line;
+                line.line = i;
+                line.probability = probability;
+                insert_into_graph(&graph, &line);
+            }
+        } else {
+            //TODO generate fractional graph
+        }
     }
     return graph;
 }
@@ -284,6 +328,25 @@ int find_graph_line(Graph* graph, int l, int r, double line) {
         return find_graph_line(graph, mid + 1, r, line);
     }
     return -1;
+}
+int find_insert_index(Graph* graph, int l, int r, double line) {
+    // the way this function is used it's most common for the
+    // correct answer to the at the end. So we create a check
+    // for that specifically
+    if (r >= 0 && graph->graphLines[r].line < line)
+        return r+1;
+    int mid = l;
+    if (r >= l) {
+        mid = l + (r - l) / 2;
+        if (graph->graphLines[mid].line == line)
+            return mid;
+
+        if (graph->graphLines[mid].line > line)
+            return find_insert_index(graph, l, mid - 1, line);
+
+        return find_insert_index(graph, mid + 1, r, line);
+    }
+    return mid;
 }
 
 // dynamic array functions
@@ -302,6 +365,20 @@ void insert_into_graph(Graph* in, GraphLine* element) {
     }
     in->graphLines[in->used].line = element->line;
     in->graphLines[in->used].probability = element->probability;
+    in->used++;
+}
+void insert_into_graph_sorted(Graph* in, GraphLine* element) {
+    if (in->used == in->size) {
+        in->size *= 2;
+        in->graphLines = realloc(in->graphLines, in->size * sizeof(GraphLine));
+    }
+    int index = find_insert_index(in, 0, in->used-1, element->line);
+    for (int i = in->used; i > index; i--) {
+        in->graphLines[i].line = in->graphLines[i-1].line;
+        in->graphLines[i].probability = in->graphLines[i-1].probability;
+    }
+    in->graphLines[index].line = element->line;
+    in->graphLines[index].probability = element->probability;
     in->used++;
 }
 void free_graph(Graph* in) {

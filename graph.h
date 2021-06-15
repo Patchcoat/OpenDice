@@ -47,9 +47,11 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments);
 // create and return a graph for a given roll
 Graph graph(char op, double left, double right);
 int find_graph_line(Graph* graph, int l, int r, double line);
+int find_insert_index(Graph* graph, int l, int r, double line);
 // dynamic array functions
 void init_graph(Graph* in, size_t initSize);
 void insert_into_graph(Graph* in, GraphLine* element);
+void insert_into_graph_sorted(Graph* in, GraphLine* element);
 void free_graph(Graph* in);
 // combines two graphs into a new one, then frees the input graphs
 Graph* combine_graphs(char op, Graph* left, Graph* right);

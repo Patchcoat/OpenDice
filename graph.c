@@ -208,7 +208,7 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
                 }
             } break;
             case 'c': {
-                if (on_graph || prev_graph) {
+                if (on_graph) {
 
                 } else {
                     if (stack_top < 0) {

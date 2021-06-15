@@ -322,7 +322,29 @@ Graph graph(char op, double left, double right) {
                 insert_into_graph(&graph, &line);
             }
         } else {
-            //TODO generate fractional graph
+            int min = 0;
+            int max = (int) integral;
+            for (int i = min; i <= max; i++) {
+                double probability = 1 / max;
+                for (int j = 1; j <= 2; j++) {
+                    GraphLine line;
+                    line.line = i + (fraction * j);
+                    line.probability = probability;
+                    int index = find_graph_line(&graph, 0, graph.used-1, line.line);
+                    if (index == -1) {
+                        insert_into_graph_sorted(&graph, &line);
+                    } else {
+                        graph.graphLines[index].probability += line.probability;
+                        line.probability = graph.graphLines[index].probability;
+                    }
+                    // set max
+                    if (line.probability > graph.max)
+                        graph.max = line.probability;
+                    // set min
+                    if (line.probability < graph.min)
+                        graph.min = line.probability;
+                }
+            }
         }
     }
     return graph;

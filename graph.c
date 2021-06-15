@@ -117,8 +117,14 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
         } else {
             double result = 0;
             print_graph_array(graph_array, stack_top+1);
-            int on_graph = !graph_array[stack_top].null;
-            int prev_graph = !graph_array[stack_top - 1].null;
+            int on_graph = 0;
+            int prev_graph = 0;
+            if (stack_top >= 0) {
+                on_graph = !graph_array[stack_top].null;
+                if (stack_top >= 1) {
+                    prev_graph = !graph_array[stack_top - 1].null;
+                }
+            }
             switch(equation->operators[i]) {
             case '+': { // addition
                 if (on_graph || prev_graph) {
@@ -205,11 +211,15 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
                 if (on_graph || prev_graph) {
 
                 } else {
-                    free_graph(&graph_array[stack_top - 1]);
-                    graph_array[stack_top - 1] = graph('c', num_stack[stack_top - 1], num_stack[stack_top]);
-                    result_graph = graph_array[stack_top - 1];
-                    free_graph(&graph_array[stack_top]);
-                    stack_top--;
+                    if (stack_top < 0) {
+                        stack_top++;
+                        graph_array[0] = graph('c', 1, 2);
+                        result_graph = graph_array[stack_top];
+                    } else {
+                        free_graph(&graph_array[stack_top]);
+                        graph_array[stack_top] = graph('c', num_stack[stack_top], 2);
+                        result_graph = graph_array[stack_top];
+                    }
                 }
             } break;
             default:
@@ -297,9 +307,11 @@ Graph graph(char op, double left, double right) {
     } else if (op == 'c') {
         double integral;
         double fraction = modf(left, &integral);
+        if (integral == 0)
+            integral = 1;
         if (fraction == 0) {
             int min = 0;
-            int max = integral;
+            int max = (int)integral;
             double probability = 1 / max;
             graph.max = probability;
             graph.min = probability;

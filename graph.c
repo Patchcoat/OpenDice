@@ -139,7 +139,7 @@ Graph coin_flip_coin(Graph *top_graph) {
 // order
 // 1 = top_graph represents the type of die to roll: 2d(2d6)
 // 0 = top_graph represents the number of dice to roll: (2d6)d6
-Graph die_roll_die(Graph *top_graph, double num, short order) { // (2d6)d6
+Graph die_roll_die(Graph *top_graph, double num, short order) {
     Graph merge_graph;
     init_graph(&merge_graph, top_graph->used * num);
 
@@ -175,12 +175,40 @@ Graph die_roll_die(Graph *top_graph, double num, short order) { // (2d6)d6
     return merge_graph;
 }
 
-Graph die_merge_die(Graph *top_graph, Graph *prev_graph) { // (2d6)d(2d6)
+// use one graph as the die count, and another graph as the die value
+Graph die_merge_die(Graph *top_graph, Graph *prev_graph) {
     Graph merge_graph;
     init_graph(&merge_graph, top_graph->used * prev_graph->used);
-    printf("die merge die\n");
 
-    // TODO
+    double probability = 0;
+    for (int i = 0; i < top_graph->used; i++) {
+        for (int j = 0; j < prev_graph->used; j++) {
+            Graph temp_graph;
+            temp_graph = graph('d', top_graph->graphLines[i].line, prev_graph->graphLines[j].line);
+
+            for (int k = 0; k < temp_graph.used; k++) {
+                GraphLine line = temp_graph.graphLines[k];
+                // TODO fix probability
+                probability = line.probability / (top_graph->used * prev_graph->used);
+                line.probability = probability;
+                int index = find_graph_line(&merge_graph, 0, merge_graph.used-1, line.line);
+                if (index == -1) {
+                    insert_into_graph_sorted(&merge_graph, &line);
+                } else {
+                    merge_graph.graphLines[index].probability += probability;
+                    probability = merge_graph.graphLines[index].probability;
+                }
+                // set max
+                if (probability > merge_graph.max)
+                    merge_graph.max = probability;
+                // set min
+                if (probability < merge_graph.min)
+                    merge_graph.min = probability;
+            }
+
+            free_graph(&temp_graph);
+        }
+    }
 
     free_graph(top_graph);
     free_graph(prev_graph);

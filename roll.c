@@ -611,14 +611,13 @@ void draw_graph(struct arguments *arguments, Equation *equation) {
         printf("Min: %f\n", result.min);
         printf("Max: %f\n", result.max);
     }
-    // bar_count is (probability - result.min) / (result.max - result.min) * (MAXGRAPHBARSIZE - 1) + 1
+    // bar_count is probability / result.max * (MAXGRAPHBARSIZE - 1) + 1
     // a bit of algebra lets us precalculate so it doesn't have to be done every loop
-    double mult = (MAXGRAPHBARSIZE - 1) / (result.max - result.min);
-    double add = -result.min * mult + 1;
+    double mult = (MAXGRAPHBARSIZE - 1) / result.max;
     for (int i = 0; i < result.used; i++) {
         printf("%10f: ", result.graphLines[i].line);
         double probability = result.graphLines[i].probability;
-        int bar_count = round(probability * mult + add);
+        int bar_count = round(probability * mult + 1);
         if (result.max == result.min) {
             bar_count = 5;
         }

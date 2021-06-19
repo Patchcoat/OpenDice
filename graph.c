@@ -198,7 +198,12 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
             } break;
             case 'd': { // roll dice
                 if (on_graph || prev_graph) {
+                    // TODO, you know, the thing
+                    if (on_graph && prev_graph) {
 
+                    } else {
+
+                    }
                 } else {
                     free_graph(&graph_array[stack_top - 1]);
                     graph_array[stack_top - 1] = graph('d', num_stack[stack_top - 1], num_stack[stack_top]);
@@ -209,7 +214,35 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
             } break;
             case 'c': {
                 if (on_graph) {
-
+                    Graph merge_graph;
+                    init_graph(&merge_graph, graph_array[stack_top].size * 2);
+                    double probability = 0;
+                    for (int j = 0; j < graph_array[stack_top].used; j++) {
+                        if (graph_array[stack_top].graphLines[j].line == 0)
+                            continue;
+                        Graph temp_graph = graph('c', graph_array[stack_top].graphLines[j].line, 2);
+                        for (int k = 0; k < temp_graph.used; k++) {
+                            GraphLine line = temp_graph.graphLines[k];
+                            probability = line.probability / graph_array[stack_top].used;
+                            line.probability = probability;
+                            int index = find_graph_line(&merge_graph, 0, merge_graph.used-1, line.line);
+                            if (index == -1) {
+                                insert_into_graph_sorted(&merge_graph, &line);
+                            } else {
+                                merge_graph.graphLines[index].probability += probability;
+                                probability = merge_graph.graphLines[index].probability;
+                            }
+                            // set max
+                            if (probability > merge_graph.max)
+                                merge_graph.max = probability;
+                            // set min
+                            if (probability < merge_graph.min)
+                                merge_graph.min = probability;
+                        }
+                        free_graph(&temp_graph);
+                    }
+                    free_graph(&graph_array[stack_top]);
+                    result_graph = merge_graph;
                 } else {
                     if (stack_top < 0) {
                         stack_top++;
@@ -312,7 +345,7 @@ Graph graph(char op, double left, double right) {
         if (fraction == 0) {
             int min = 0;
             int max = (int)integral;
-            double probability = 1 / max;
+            double probability = 1 / (double) (max + 1);
             graph.max = probability;
             graph.min = probability;
             for (int i = min; i <= max; i++) {
@@ -325,7 +358,7 @@ Graph graph(char op, double left, double right) {
             int min = 0;
             int max = (int) integral;
             for (int i = min; i <= max; i++) {
-                double probability = 1 / max;
+                double probability = 1.0 / (double) (max + 1);
                 for (int j = 1; j <= 2; j++) {
                     GraphLine line;
                     line.line = i + (fraction * j);
@@ -351,6 +384,8 @@ Graph graph(char op, double left, double right) {
 }
 
 int find_graph_line(Graph* graph, int l, int r, double line) {
+    if (graph->used == 0)
+        return -1;
     if (r >= l) {
         int mid = l + (r - l) / 2;
         if (graph->graphLines[mid].line == line)

@@ -103,6 +103,90 @@ Graph graph_unary(Graph *graph_array, Graph result_graph, int stack_top, double 
     return result_graph;
 }
 
+Graph coin_flip_coin(Graph *top_graph) {
+    Graph merge_graph;
+    init_graph(&merge_graph, top_graph->size * 2);
+    double probability = 0;
+    for (int i = 0; i < top_graph->used; i++) {
+        if (top_graph->graphLines[i].line == 0)
+            continue;
+        Graph temp_graph = graph('c', top_graph->graphLines[i].line, 2);
+        for (int j = 0; j < temp_graph.used; j++) {
+            GraphLine line = temp_graph.graphLines[j];
+            probability = line.probability / top_graph->used;
+            line.probability = probability;
+            int index = find_graph_line(&merge_graph, 0, merge_graph.used-1, line.line);
+            if (index == -1) {
+                insert_into_graph_sorted(&merge_graph, &line);
+            } else {
+                merge_graph.graphLines[index].probability += probability;
+                probability = merge_graph.graphLines[index].probability;
+            }
+            // set max
+            if (probability > merge_graph.max)
+                merge_graph.max = probability;
+            // set min
+            if (probability < merge_graph.min)
+                merge_graph.min = probability;
+        }
+        free_graph(&temp_graph);
+    }
+    free_graph(top_graph);
+
+    return merge_graph;
+}
+
+// order
+// 1 = top_graph represents the type of die to roll: 2d(2d6)
+// 0 = top_graph represents the number of dice to roll: (2d6)d6
+Graph die_roll_die(Graph *top_graph, double num, short order) { // (2d6)d6
+    Graph merge_graph;
+    init_graph(&merge_graph, top_graph->used * num);
+
+    double probability = 0;
+    for (int i = 0; i < top_graph->used; i++) {
+        Graph temp_graph;
+        if (order) {// graph is the type of die
+            temp_graph = graph('d', num, top_graph->graphLines[i].line);
+        } else {// graph is the number of dice
+            temp_graph = graph('d', top_graph->graphLines[i].line, num);
+        }
+        for (int j = 0; j < temp_graph.used; j++) {
+            GraphLine line = temp_graph.graphLines[j];
+            probability = line.probability / top_graph->used;
+            line.probability = probability;
+            int index = find_graph_line(&merge_graph, 0, merge_graph.used-1, line.line);
+            if (index == -1) {
+                insert_into_graph_sorted(&merge_graph, &line);
+            } else {
+                merge_graph.graphLines[index].probability += probability;
+                probability = merge_graph.graphLines[index].probability;
+            }
+            // set max
+            if (probability > merge_graph.max)
+                merge_graph.max = probability;
+            // set min
+            if (probability < merge_graph.min)
+                merge_graph.min = probability;
+        }
+        free_graph(&temp_graph);
+    }
+    free_graph(top_graph);
+    return merge_graph;
+}
+
+Graph die_merge_die(Graph *top_graph, Graph *prev_graph) { // (2d6)d(2d6)
+    Graph merge_graph;
+    init_graph(&merge_graph, top_graph->used * prev_graph->used);
+    printf("die merge die\n");
+
+    // TODO
+
+    free_graph(top_graph);
+    free_graph(prev_graph);
+    return merge_graph;
+}
+
 Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
     double *num_stack = malloc(sizeof(double*) * (equation->num_count + 1));
     int num_count = 0;
@@ -198,11 +282,16 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
             } break;
             case 'd': { // roll dice
                 if (on_graph || prev_graph) {
-                    // TODO, you know, the thing
                     if (on_graph && prev_graph) {
-
+                        result_graph = die_merge_die(&graph_array[stack_top], &graph_array[stack_top-1]);
                     } else {
-
+                        if (on_graph) {
+                            result_graph = die_roll_die(&graph_array[stack_top], num_stack[stack_top-1], 1);
+                            free_graph(&graph_array[stack_top-1]);
+                        } else {
+                            result_graph = die_roll_die(&graph_array[stack_top-1], num_stack[stack_top], 0);
+                            free_graph(&graph_array[stack_top]);
+                        }
                     }
                 } else {
                     free_graph(&graph_array[stack_top - 1]);
@@ -214,35 +303,7 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
             } break;
             case 'c': {
                 if (on_graph) {
-                    Graph merge_graph;
-                    init_graph(&merge_graph, graph_array[stack_top].size * 2);
-                    double probability = 0;
-                    for (int j = 0; j < graph_array[stack_top].used; j++) {
-                        if (graph_array[stack_top].graphLines[j].line == 0)
-                            continue;
-                        Graph temp_graph = graph('c', graph_array[stack_top].graphLines[j].line, 2);
-                        for (int k = 0; k < temp_graph.used; k++) {
-                            GraphLine line = temp_graph.graphLines[k];
-                            probability = line.probability / graph_array[stack_top].used;
-                            line.probability = probability;
-                            int index = find_graph_line(&merge_graph, 0, merge_graph.used-1, line.line);
-                            if (index == -1) {
-                                insert_into_graph_sorted(&merge_graph, &line);
-                            } else {
-                                merge_graph.graphLines[index].probability += probability;
-                                probability = merge_graph.graphLines[index].probability;
-                            }
-                            // set max
-                            if (probability > merge_graph.max)
-                                merge_graph.max = probability;
-                            // set min
-                            if (probability < merge_graph.min)
-                                merge_graph.min = probability;
-                        }
-                        free_graph(&temp_graph);
-                    }
-                    free_graph(&graph_array[stack_top]);
-                    result_graph = merge_graph;
+                    result_graph = coin_flip_coin(&graph_array[stack_top]);
                 } else {
                     if (stack_top < 0) {
                         stack_top++;

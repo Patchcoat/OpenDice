@@ -5,13 +5,20 @@ CC = gcc
 CFLAGS = -g -Wall -lm
 
 # the target executable
+OBJFILES = roll.o graph.o
 TARGET = roll
 
 # build the program
 all: $(TARGET)
 
-$(TARGET): $(TARGET).c
-	$(CC) $(CFLAGS) -o $(TARGET) $(TARGET).c
+$(TARGET): $(OBJFILES)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJFILES)
+
+$(TARGET).o: $(TARGET).c graph.h
+	$(CC) $(CFLAGS) -c $(TARGET).c
+
+graph.o: graph.c graph.h
+	$(CC) $(CFLAGS) -c graph.c
 
 clean:
-	$(RM) $(TARGET)
+	$(RM) $(OBJFILES) $(TARGET)

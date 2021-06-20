@@ -29,9 +29,36 @@ double exponent(double a, double b){
 double negation(double n) {
     return -n;
 }
-// TODO replace with a better algorithm, such as prime swing
-double factorial(double n) {
+// TODO replace with PrimeSwing algorithm
+double slow_factorial(double n) {
     return n <= 1 ? 1 : n * factorial(n-1);
+}
+double factorial(double n) {
+    if (n < 0)
+        return 1;
+    if (n < 2)
+        return 1;
+
+    double p = DecInteger(1);
+    double r = DecInteger(1);
+
+    double N = 1;
+
+    int h = 0, shift = 0, high = 1;
+    int log2n = floor(log(n) * 1.4426950408889634);
+
+    while (h != n) {
+        shift += h;
+        h = n >> log2n--;
+        int len = high;
+        high = (h - 1) | 1;
+        len = (high - len) / 2;
+
+        if (len > 0) {
+            p = p * Product(len);
+            r = r * p;
+        }
+    }
 }
 
 Graph graph_combine(int on_graph, int prev_graph, Graph *graph_array, Graph result_graph,

@@ -277,12 +277,14 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
                 if (on_graph || prev_graph) {
                     if (on_graph && prev_graph) {
                         result_graph = die_merge_die(&graph_array[stack_top], &graph_array[stack_top-1]);
-                    } else if (on_graph) {
-                        result_graph = die_roll_die(&graph_array[stack_top], num_stack[stack_top-1], 1);
-                        free_graph(&graph_array[stack_top-1]);
                     } else {
-                        result_graph = die_roll_die(&graph_array[stack_top-1], num_stack[stack_top], 0);
-                        free_graph(&graph_array[stack_top]);
+                        if (on_graph) {
+                            result_graph = die_roll_die(&graph_array[stack_top], num_stack[stack_top-1], 1);
+                            free_graph(&graph_array[stack_top-1]);
+                        } else {
+                            result_graph = die_roll_die(&graph_array[stack_top-1], num_stack[stack_top], 0);
+                            free_graph(&graph_array[stack_top]);
+                        }
                     }
                 } else {
                     free_graph(&graph_array[stack_top - 1]);

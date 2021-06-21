@@ -193,7 +193,7 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
             graph_array[stack_top].null = 1;
         } else {
             double result = 0;
-            print_graph_array(graph_array, stack_top+1);
+            //print_graph_array(graph_array, stack_top+1);
             int on_graph = 0;
             int prev_graph = 0;
             if (stack_top >= 0) {

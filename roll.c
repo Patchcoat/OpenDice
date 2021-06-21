@@ -4,6 +4,7 @@
 #include <argp.h>
 #include <math.h>
 #include "graph.h"
+#include "blumblumshub.h"
 
 #define ISNUM(index) arg[index] >= '0' && arg[index] <= '9'
 #define ISNUMEXTENDED(index) (arg[index] >= '0' && arg[index] <= '9') || \
@@ -332,7 +333,7 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
     }
 
     for (int i = 0; i < count_int; i++) {
-        rolls[i] = !coin + (rand() % (int) die_int);
+        rolls[i] = !coin + (rand_num() % (long) die_int);
         if (arguments->verbose) {
             if (coin)
                 printf("Flip %d: %s\n", i+1, rolls[i] ? "heads" : "tails");
@@ -341,7 +342,7 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
         }
     }
     if (count_frac > 0) {
-        rolls[(int) floor(count)] = (!coin + rand() % (int) die_int) * count_frac;
+        rolls[(int) floor(count)] = (!coin + rand_num() % (long) die_int) * count_frac;
     }
 
     int start = 0;
@@ -693,7 +694,7 @@ int main(int argc, char *argv[]){
     }
     // evaluate equation
     time_t t;
-    srand((unsigned) time(&t));
+    init_seed((unsigned) time(&t));
     int target_true = 0;
     int target_false = 0;
     double result = 0;
@@ -738,6 +739,7 @@ int main(int argc, char *argv[]){
     free(equation->operators);
     free(equation->numbers);
     free(equation);
+    rand_clear();
 
     exit(0);
 }

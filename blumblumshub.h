@@ -1,2 +1,7 @@
+#include <gmp.h>
 
-void numberGen(long p, long q, long seed);
+long rand_num();
+void init_seed(unsigned long seed);
+void set_seed(unsigned long seed);
+void rand_init();
+void rand_clear();

@@ -12,7 +12,7 @@ TARGET = roll
 all: $(TARGET)
 
 $(TARGET): $(OBJFILES)
-	$(CC) $(CFLAGS) -o $(TARGET) $(OBJFILES)
+	$(CC) $(CFLAGS) -o $(TARGET) $(OBJFILES) -lgmp
 
 $(TARGET).o: $(TARGET).c graph.h blumblumshub.h
 	$(CC) $(CFLAGS) -c $(TARGET).c

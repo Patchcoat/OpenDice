@@ -4,6 +4,7 @@
 #include <argp.h>
 #include <math.h>
 #include "graph.h"
+#include "blumblumshub.h"
 
 #define ISNUM(index) arg[index] >= '0' && arg[index] <= '9'
 #define ISNUMEXTENDED(index) (arg[index] >= '0' && arg[index] <= '9') || \
@@ -33,7 +34,7 @@ static struct argp_option options[] = {
         "Compare the result against NUM using INEQUALITY. INEQUALITY is '=' by default"},
     {"multiple", 'm', "NUM", 0, "Repeat the given equations NUM times"},
     {"graph", 'g', "INEQUALITY", OPTION_ARG_OPTIONAL,
-        "MINIMAL SUPPORT, ONLY WORKS FOR DIE ROLLS, AND ONLY IF THERE ARE NO OPERATORS OTHER THAN THE DIE ROLL OPERATOR. Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
+        "NO INEQUALITY SUPPORT. Graph the probability of every possible result. INEQUALITY is '=' by default meaning the probability a roll is equal to a given result"},
     {"round", 'r', "TYPE", OPTION_ARG_OPTIONAL, 
         "Round the final result to the nearest integer. TYPE is what direction to round, (u)p, (d)own, (c)losest. Defaults to closest."},
     {0}
@@ -332,7 +333,7 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
     }
 
     for (int i = 0; i < count_int; i++) {
-        rolls[i] = !coin + (rand() % (int) die_int);
+        rolls[i] = !coin + (rand_num() % (long) die_int);
         if (arguments->verbose) {
             if (coin)
                 printf("Flip %d: %s\n", i+1, rolls[i] ? "heads" : "tails");
@@ -341,7 +342,7 @@ double roll(double count, double die, int coin, struct arguments *arguments) {
         }
     }
     if (count_frac > 0) {
-        rolls[(int) floor(count)] = (!coin + rand() % (int) die_int) * count_frac;
+        rolls[(int) floor(count)] = (!coin + rand_num() % (long) die_int) * count_frac;
     }
 
     int start = 0;
@@ -693,7 +694,7 @@ int main(int argc, char *argv[]){
     }
     // evaluate equation
     time_t t;
-    srand((unsigned) time(&t));
+    init_seed((unsigned) time(&t));
     int target_true = 0;
     int target_false = 0;
     double result = 0;
@@ -738,6 +739,7 @@ int main(int argc, char *argv[]){
     free(equation->operators);
     free(equation->numbers);
     free(equation);
+    rand_clear();
 
     exit(0);
 }

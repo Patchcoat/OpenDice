@@ -19,7 +19,7 @@
 #define MAXEQUATIONNUMSIZE 256
 #define MAXGRAPHBARSIZE 10
 
-const char *argp_program_version = "OpenDice 0.2";
+const char *argp_program_version = "OpenDice 1.0";
 static char doc[] = "Documentation";
 static char args_doc[] = "EQUATION";
 

@@ -34,6 +34,15 @@ double factorial(double n) {
     return n <= 1 ? 1 : n * factorial(n-1);
 }
 
+void max_update(Graph* graph, double probability) {
+    // set max
+    if (probability > graph->max)
+        graph->max = probability;
+    // set min
+    if (probability < graph->min)
+        graph->min = probability;
+}
+
 Graph graph_combine(int on_graph, int prev_graph, Graph *graph_array, Graph result_graph,
       int stack_top, double *num_stack, double (*opp)()) {
     if (on_graph && prev_graph) {
@@ -54,12 +63,7 @@ Graph graph_combine(int on_graph, int prev_graph, Graph *graph_array, Graph resu
                     temp_graph.graphLines[index].probability += probability;
                     probability = temp_graph.graphLines[index].probability;
                 }
-                // set max
-                if (probability > temp_graph.max)
-                    temp_graph.max = probability;
-                // set min
-                if (probability < temp_graph.min)
-                    temp_graph.min = probability;
+                max_update(&temp_graph, probability);
             }
         }
         free_graph(&graph_array[stack_top - 1]);
@@ -116,12 +120,7 @@ void combine_coin_die_graph(Graph *temp_graph, Graph *merge_graph, double diviso
             merge_graph->graphLines[index].probability += probability;
             probability = merge_graph->graphLines[index].probability;
         }
-        // set max
-        if (probability > merge_graph->max)
-            merge_graph->max = probability;
-        // set min
-        if (probability < merge_graph->min)
-            merge_graph->min = probability;
+        max_update(merge_graph, probability);
     }
 }
 
@@ -314,8 +313,62 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
             }
         }
     }
-
     free(num_stack);
+    char *inequality = arguments->graph_inequality;
+    if (inequality[1] == '\0') {
+        if (inequality[0] == '=')
+            return result_graph;
+    } else {
+        if (inequality[0] == '=' && inequality[1] == '=')
+            return result_graph;
+    }
+
+    result_graph.max = 0;
+    result_graph.min = 1;
+    double probability = 0;
+    double total = 0;
+    if (inequality[1] == '\0') {
+        if (inequality[0] == '<'){
+            for (int i = 0; i < result_graph.used; i++) {
+                probability = total;
+                total += result_graph.graphLines[i].probability;
+                result_graph.graphLines[i].probability = probability;
+                max_update(&result_graph, probability);
+            }
+        } else if (inequality[0] == '>') {
+            for (int i = result_graph.used - 1; i >= 0; i--) {
+                probability = total;
+                total += result_graph.graphLines[i].probability;
+                result_graph.graphLines[i].probability = probability;
+                max_update(&result_graph, probability);
+            }
+        }
+    } else {
+        if ((inequality[0] == '<' && inequality[1] == '=') || 
+                (inequality[0] == '=' && inequality[1] == '<')){
+            for (int i = 0; i < result_graph.used; i++) {
+                total += result_graph.graphLines[i].probability;
+                probability = total;
+                result_graph.graphLines[i].probability = probability;
+                max_update(&result_graph, probability);
+            }
+        } else if ((inequality[0] == '>' && inequality[1] == '=') || 
+                (inequality[0] == '=' && inequality[1] == '>')) {
+            for (int i = result_graph.used - 1; i >= 0; i--) {
+                total += result_graph.graphLines[i].probability;
+                probability = total;
+                result_graph.graphLines[i].probability = probability;
+                max_update(&result_graph, probability);
+            }
+        } else if (inequality[0] == '!' && inequality[1] == '=') {
+            for (int i = 0; i < result_graph.used; i++) {
+                probability = 1.0 - result_graph.graphLines[i].probability;
+                result_graph.graphLines[i].probability = probability;
+                max_update(&result_graph, probability);
+            }
+        }
+    }
+
     return result_graph;
 }
 
@@ -358,12 +411,7 @@ Graph graph(char op, double left, double right) {
                 line.probability = calculate_probability(i, integral_left, integral_right);
                 insert_into_graph(&graph, &line);
 
-                // set max
-                if (line.probability > graph.max)
-                    graph.max = line.probability;
-                // set min
-                if (line.probability < graph.min)
-                    graph.min = line.probability;
+                max_update(&graph, line.probability);
             }
         } else {
             int min = (int) integral_left;
@@ -382,12 +430,8 @@ Graph graph(char op, double left, double right) {
                         graph.graphLines[index].probability += line.probability;
                         line.probability = graph.graphLines[index].probability;
                     }
-                    // set max
-                    if (line.probability > graph.max)
-                        graph.max = line.probability;
-                    // set min
-                    if (line.probability < graph.min)
-                        graph.min = line.probability;
+
+                    max_update(&graph, line.probability);
                 }
             }
         }
@@ -424,12 +468,7 @@ Graph graph(char op, double left, double right) {
                         graph.graphLines[index].probability += line.probability;
                         line.probability = graph.graphLines[index].probability;
                     }
-                    // set max
-                    if (line.probability > graph.max)
-                        graph.max = line.probability;
-                    // set min
-                    if (line.probability < graph.min)
-                        graph.min = line.probability;
+                    max_update(&graph, line.probability);
                 }
             }
         }

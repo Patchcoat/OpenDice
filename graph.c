@@ -315,6 +315,53 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
         }
     }
 
+    char *inequality = arguments->graph_inequality;
+    if (inequality[1] == '\0') {
+        if (inequality[0] == '=') { // do nothing
+            if (arguments->verbose)
+                printf("Graphing Equals\n");
+        } else if (inequality[0] == '<'){
+            if (arguments->verbose)
+                printf("Graphing Less Than\n");
+            for (int i = 0; i < result_graph.used; i++) {
+
+            }
+        } else if (inequality[0] == '>') {
+            if (arguments->verbose)
+                printf("Graphing Greater Than\n");
+            for (int i = 0; i < result_graph.used; i++) {
+
+            }
+        } else {
+            printf("ERROR: Inequality unknown. Defaulting to '='");
+        }
+    } else {
+        if ((inequality[0] == '<' && inequality[1] == '=') || 
+                (inequality[0] == '=' && inequality[1] == '<')){
+            if (arguments->verbose)
+                printf("Graphing Less Than or Equal To\n");
+            for (int i = 0; i < result_graph.used; i++) {
+
+            }
+        } else if ((inequality[0] == '>' && inequality[1] == '=') || 
+                (inequality[0] == '=' && inequality[1] == '>')) {
+            if (arguments->verbose)
+                printf("Graphing Greater Than or Equal To\n");
+            for (int i = 0; i < result_graph.used; i++) {
+
+            }
+        } else if (inequality[0] == '!' && inequality[1] == '=') {
+            if (arguments->verbose)
+                printf("Graphing Not Equal To\n");
+            for (int i = 0; i < result_graph.used; i++) {
+
+            }
+        } else {
+            printf("ERROR: Inequality unknown. Defaulting to '='");
+        }
+
+    }
+
     free(num_stack);
     return result_graph;
 }

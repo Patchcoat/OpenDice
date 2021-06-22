@@ -596,8 +596,28 @@ void rounding(struct arguments *arguments, double *result){
  * takes in an equation with a single roll or coin flip
  * return an array of probabilities, and the length
  ***********************************************************/
+int verify_inequality(struct arguments *arguments) {
+    char *inequality = arguments->graph_inequality;
+    if (inequality[1] == '\0') {
+        if (!(inequality[0] == '=' || inequality[0] == '<' || inequality[0] == '>'))
+            return 1;
+    } else {
+        if (!((inequality[0] == '<' && inequality[1] == '=') || 
+                (inequality[0] == '=' && inequality[1] == '<') || 
+                (inequality[0] == '>' && inequality[1] == '=') || 
+                (inequality[0] == '=' && inequality[1] == '>') || 
+                (inequality[0] == '!' && inequality[1] == '=')))
+            return 1;
+    }
+    return 0;
+}
 void draw_graph(struct arguments *arguments, Equation *equation) {
-    int err = verify_equation(equation, arguments);
+    int err = verify_inequality(arguments);
+    if (err) {
+        printf("ERROR: Inequality is not recognized\n");
+        return;
+    }
+    err = verify_equation(equation, arguments);
     if (err != 0) {
         if (err == 'l') {
             printf("ERROR: Nothing to graph, must have a die or coin\n");
@@ -608,7 +628,32 @@ void draw_graph(struct arguments *arguments, Equation *equation) {
     }
     Graph result = evaluate_equation_graph(equation, arguments);
     if (arguments->verbose) {
-        printf("Graphing\n");
+        char *inequality = arguments->graph_inequality;
+        if (inequality[1] == '\0') {
+            if (inequality[0] == '=') {
+                if (arguments->verbose)
+                    printf("Graphing Equals\n");
+            } else if (inequality[0] == '<'){
+                if (arguments->verbose)
+                    printf("Graphing Less Than\n");
+            } else if (inequality[0] == '>') {
+                if (arguments->verbose)
+                    printf("Graphing Greater Than\n");
+            }
+        } else {
+            if ((inequality[0] == '<' && inequality[1] == '=') || 
+                    (inequality[0] == '=' && inequality[1] == '<')){
+                if (arguments->verbose)
+                    printf("Graphing Less Than or Equal To\n");
+            } else if ((inequality[0] == '>' && inequality[1] == '=') || 
+                    (inequality[0] == '=' && inequality[1] == '>')) {
+                if (arguments->verbose)
+                    printf("Graphing Greater Than or Equal To\n");
+            } else if (inequality[0] == '!' && inequality[1] == '=') {
+                if (arguments->verbose)
+                    printf("Graphing Not Equal To\n");
+            }
+        }
         printf("Min: %f\n", result.min);
         printf("Max: %f\n", result.max);
     }

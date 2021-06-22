@@ -596,8 +596,7 @@ void rounding(struct arguments *arguments, double *result){
  * takes in an equation with a single roll or coin flip
  * return an array of probabilities, and the length
  ***********************************************************/
-int verify_inequality(struct arguments *arguments) {
-    char *inequality = arguments->graph_inequality;
+int verify_inequality(char *inequality) {
     if (inequality[1] == '\0') {
         if (!(inequality[0] == '=' || inequality[0] == '<' || inequality[0] == '>'))
             return 1;
@@ -612,7 +611,8 @@ int verify_inequality(struct arguments *arguments) {
     return 0;
 }
 void draw_graph(struct arguments *arguments, Equation *equation) {
-    int err = verify_inequality(arguments);
+    char *inequality = arguments->graph_inequality;
+    int err = verify_inequality(inequality);
     if (err) {
         printf("ERROR: Inequality is not recognized\n");
         return;
@@ -628,7 +628,6 @@ void draw_graph(struct arguments *arguments, Equation *equation) {
     }
     Graph result = evaluate_equation_graph(equation, arguments);
     if (arguments->verbose) {
-        char *inequality = arguments->graph_inequality;
         if (inequality[1] == '\0') {
             if (inequality[0] == '=') {
                 if (arguments->verbose)

@@ -316,6 +316,7 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
     }
 
     char *inequality = arguments->graph_inequality;
+    double probability = 0;
     if (inequality[1] == '\0') {
         if (inequality[0] == '=') { // do nothing
             if (arguments->verbose)
@@ -323,14 +324,32 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
         } else if (inequality[0] == '<'){
             if (arguments->verbose)
                 printf("Graphing Less Than\n");
+            result_graph.max = 0;
+            result_graph.min = 1;
+            double total = 0;
             for (int i = 0; i < result_graph.used; i++) {
-
+                probability = total;
+                total += result_graph.graphLines[i].probability;
+                result_graph.graphLines[i].probability = probability;
+                if (probability > result_graph.max)
+                    result_graph.max = probability;
+                if (probability < result_graph.min)
+                    result_graph.min = probability;
             }
         } else if (inequality[0] == '>') {
             if (arguments->verbose)
                 printf("Graphing Greater Than\n");
-            for (int i = 0; i < result_graph.used; i++) {
-
+            result_graph.max = 0;
+            result_graph.min = 1;
+            double total = 0;
+            for (int i = result_graph.used - 1; i >= 0; i--) {
+                probability = total;
+                total += result_graph.graphLines[i].probability;
+                result_graph.graphLines[i].probability = probability;
+                if (probability > result_graph.max)
+                    result_graph.max = probability;
+                if (probability < result_graph.min)
+                    result_graph.min = probability;
             }
         } else {
             printf("ERROR: Inequality unknown. Defaulting to '='");
@@ -340,21 +359,46 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
                 (inequality[0] == '=' && inequality[1] == '<')){
             if (arguments->verbose)
                 printf("Graphing Less Than or Equal To\n");
+            result_graph.max = 0;
+            result_graph.min = 1;
+            double total = 0;
             for (int i = 0; i < result_graph.used; i++) {
-
+                total += result_graph.graphLines[i].probability;
+                probability = total;
+                result_graph.graphLines[i].probability = probability;
+                if (probability > result_graph.max)
+                    result_graph.max = probability;
+                if (probability < result_graph.min)
+                    result_graph.min = probability;
             }
         } else if ((inequality[0] == '>' && inequality[1] == '=') || 
                 (inequality[0] == '=' && inequality[1] == '>')) {
             if (arguments->verbose)
                 printf("Graphing Greater Than or Equal To\n");
-            for (int i = 0; i < result_graph.used; i++) {
-
+            result_graph.max = 0;
+            result_graph.min = 1;
+            double total = 0;
+            for (int i = result_graph.used - 1; i >= 0; i--) {
+                total += result_graph.graphLines[i].probability;
+                probability = total;
+                result_graph.graphLines[i].probability = probability;
+                if (probability > result_graph.max)
+                    result_graph.max = probability;
+                if (probability < result_graph.min)
+                    result_graph.min = probability;
             }
         } else if (inequality[0] == '!' && inequality[1] == '=') {
             if (arguments->verbose)
                 printf("Graphing Not Equal To\n");
+            result_graph.max = 0;
+            result_graph.min = 1;
             for (int i = 0; i < result_graph.used; i++) {
-
+                probability = 1.0 - result_graph.graphLines[i].probability;
+                result_graph.graphLines[i].probability = probability;
+                if (probability > result_graph.max)
+                    result_graph.max = probability;
+                if (probability < result_graph.min)
+                    result_graph.min = probability;
             }
         } else {
             printf("ERROR: Inequality unknown. Defaulting to '='");

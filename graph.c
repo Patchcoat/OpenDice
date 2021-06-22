@@ -318,6 +318,9 @@ Graph evaluate_equation_graph(Equation *equation, struct arguments *arguments) {
     if (inequality[1] == '\0') {
         if (inequality[0] == '=')
             return result_graph;
+    } else {
+        if (inequality[0] == '=' && inequality[1] == '=')
+            return result_graph;
     }
 
     result_graph.max = 0;

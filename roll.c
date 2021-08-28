@@ -227,9 +227,9 @@ Equation *parse_equation(struct arguments *arguments) {
             equation->numbers[equation->num_count++] = atof(num_str);
             equation->operators[equation->op_count++] = '.';
         } else if (ISOPERATOR(i)) {
-            if (arg[i] == '-' && (i == 0 || (ISOPERATOR(i-1)))) {
+            if (arg[i] == '-' && (i == 0 || ((ISOPERATOR(i-1)) && arg[i-1] != 'd'))) {
                 arg[i] = 'n';
-            } else if (arg[i] == '+' && (i == 0 || (ISOPERATOR(i-1)))) {
+            } else if (arg[i] == '+' && (i == 0 || ((ISOPERATOR(i-1)) && arg[i-1] != 'd'))) {
                 arg[i] = 'p';
             } else if (arg[i] == '(' && i != 0 && ((ISNUMEXTENDED(i-1)) || arg[i-1] == ')')) {
                 op_stack[++stack_top] = '*';
